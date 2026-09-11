@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="theme-color" content="#092d67">
+<title>IN NEURO — Cefaleia</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  /* Design system herdado do IN NEURO Rotina Cirúrgica (V6) */
+  :root {
+    --teal: #092d67;
+    --teal-dark: #06214a;
+    --gold: #b8926a;
+    --gold-soft: #f3ece3;
+    --gray: #444;
+    --bg: #f5f7f6;
+    --card: #ffffff;
+    --border: #dbe4e1;
+    --muted: #5d6b68;
+    --baixo: #2f7d4f;
+    --moderado: #a67a0a;
+    --moderado-alto: #c2611a;
+    --alto: #b03a2e;
+    --nao: #7a8683;
+    --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    background: var(--bg); color: #1a1a1a; padding-bottom: 40px;
+  }
+  header {
+    background: var(--teal); color: #fff; padding: 18px 16px 14px;
+    display: flex; align-items: center; gap: 12px;
+    position: sticky; top: 0; z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  }
+  header img { width: 40px; height: 40px; border-radius: 8px; background: #fff; padding: 4px; }
+  header h1 { font-size: 17px; margin: 0; font-weight: 700; }
+  header p { font-size: 11px; margin: 2px 0 0; opacity: .85; }
+  main { padding: 14px; max-width: 620px; margin: 0 auto; }
+
+  /* Dados do paciente */
+  details.pac {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 18px;
+  }
+  details.pac summary { cursor: pointer; font-weight: 700; color: var(--teal); font-size: 13px;
+    text-transform: uppercase; letter-spacing: .04em; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+  .grid label { font-size: 12.5px; font-weight: 600; color: #333; display: flex; flex-direction: column; gap: 4px; }
+  .grid input {
+    font: 14px inherit; padding: 9px 10px; border: 1px solid var(--border);
+    border-radius: 8px; background: #fbfcfc; color: #1a1a1a; font-family: inherit;
+  }
+  @media (max-width: 520px) { .grid { grid-template-columns: 1fr; } }
+
+  /* A via: linha vertical que acende conforme as etapas são concluídas */
+  .via { position: relative; padding-left: 34px; }
+  .via::before { content: ""; position: absolute; left: 12px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+  .step { position: relative; margin-bottom: 26px; }
+  .step .dot {
+    position: absolute; left: -34px; top: 0; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--border); color: var(--muted);
+    font: 600 13px/22px inherit; text-align: center;
+  }
+  .step.done .dot { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .step.done::before { content: ""; position: absolute; left: -23px; top: 26px; bottom: -26px; width: 2px; background: var(--teal); }
+  .step h2 { font: 500 21px/1.25 var(--serif); margin: 0 0 4px; color: var(--teal); }
+  .step .sub { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  .step.locked { opacity: .38; pointer-events: none; }
+
+  /* Etapa 1 — a escolha da dor */
+  .dores { display: flex; flex-direction: column; gap: 8px; }
+  .dor {
+    display: block; width: 100%; text-align: left; background: var(--card);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+    cursor: pointer; font: inherit; color: inherit;
+  }
+  .dor b { display: block; font: 500 18px/1.3 var(--serif); color: var(--teal); }
+  .dor span { font-size: 14px; color: var(--muted); }
+  .dor[aria-pressed="true"] { border-color: var(--teal); box-shadow: inset 4px 0 0 var(--teal); background: #e1e6f0; }
+  .dor:focus-visible, .proc:focus-visible, button:focus-visible,
+  select:focus-visible, input:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
+
+  .box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .box h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--teal); margin: 0 0 8px; font-weight: 700; }
+  .chk { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; font-size: 15px; cursor: pointer; }
+  .chk input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--teal); flex: none; }
+  .meta { font-size: 13px; color: var(--muted); }
+  .tuss {
+    font-variant-numeric: tabular-nums; font-weight: 700; color: var(--teal);
+    background: var(--gold-soft); border: 1px solid #e3d3bf; border-radius: 6px;
+    padding: 1px 7px; white-space: nowrap;
+  }
+  .exame { border-top: 1px solid var(--border); padding: 10px 0; }
+  .exame:first-of-type { border-top: 0; padding-top: 0; }
+  .exame .t { font-weight: 600; }
+  .flag { background: #fbeeee; border: 1px solid #efc9c5; color: #7d2a22; border-radius: 8px; padding: 8px 12px; font-size: 14px; margin: 8px 0; }
+  .note { background: #fff8e8; border: 1px solid #eedcae; color: #6a4f09; border-radius: 8px; padding: 8px 12px; font-size: 14px; margin: 8px 0; }
+
+  /* Itens que dependem de validação do médico — nunca somem, sempre destacados */
+  mark.pend {
+    background: #fff2c9; color: #6a4f09; border: 1px solid #e8cf8a;
+    border-radius: 4px; padding: 0 4px; font-weight: 700; font-style: normal;
+    text-transform: none; letter-spacing: normal;
+  }
+
+  /* Procedimentos com semáforo */
+  .procs { display: flex; flex-direction: column; gap: 8px; }
+  .proc {
+    display: flex; gap: 12px; align-items: flex-start; width: 100%; text-align: left;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; cursor: pointer; font: inherit; color: inherit;
+  }
+  .proc[aria-pressed="true"] { border-color: var(--teal); box-shadow: inset 4px 0 0 var(--teal); }
+  .proc[disabled] { cursor: not-allowed; background: #f1f3f2; }
+  .proc .lamp { flex: none; width: 14px; height: 14px; border-radius: 50%; margin-top: 5px; }
+  .proc b { display: block; font-size: 16px; }
+  .proc .risk { font-size: 13px; font-weight: 600; }
+  .proc .n { font-size: 14px; color: var(--muted); }
+
+  .bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; margin: 8px 0 4px; }
+  .bar i { display: block; height: 100%; background: var(--teal); transition: width .25s; }
+  .ready { font-size: 14px; font-weight: 600; }
+
+  .cod { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+  .cod:first-of-type { border-top: 0; }
+  .cod .d { font-size: 14px; }
+  .cod .q { grid-column: 2; font-size: 13px; color: var(--muted); }
+  ul.l { margin: 0; padding-left: 18px; }
+  ul.l li { margin: 3px 0; font-size: 15px; }
+  .legit li::marker { color: var(--baixo); }
+  .legit li.no::marker { color: var(--alto); }
+
+  pre.out {
+    white-space: pre-wrap; word-wrap: break-word; background: #fff;
+    border: 1px solid var(--border); border-left: 4px solid var(--gold);
+    border-radius: 8px; padding: 12px 14px; font: 14px/1.55 var(--serif); margin: 0;
+  }
+  .actions { display: flex; gap: 8px; margin: 8px 0 14px; flex-wrap: wrap; }
+  button.btn {
+    font: 600 14px inherit; font-family: inherit; border-radius: 10px; border: 1.5px solid var(--teal);
+    background: var(--teal); color: #fff; padding: 10px 16px; cursor: pointer;
+  }
+  button.btn:active { background: var(--teal-dark); }
+  button.btn.ghost { background: #fff; color: var(--teal); }
+  select {
+    font: 14px inherit; font-family: inherit; padding: 9px 10px; border: 1px solid var(--border);
+    border-radius: 8px; width: 100%; background: #fbfcfc; color: #1a1a1a;
+  }
+  .verd { border-radius: 12px; padding: 12px 14px; margin: 10px 0; font-size: 15px; border: 1px solid var(--border); background: #fff; }
+  .verd b { display: block; font: 500 17px/1.3 var(--serif); margin-bottom: 2px; }
+  .f2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .f2 label.full { grid-column: 1/-1; }
+  .f2 label { font-size: 12.5px; font-weight: 600; color: #333; display: flex; flex-direction: column; gap: 4px; }
+  .f2 input, .f2 select {
+    font: 14px inherit; font-family: inherit; padding: 9px 10px; border: 1px solid var(--border);
+    border-radius: 8px; background: #fbfcfc; color: #1a1a1a; width: 100%;
+  }
+  .timeline { display: flex; gap: 4px; margin: 10px 0 2px; }
+  .timeline span { flex: 1; height: 6px; border-radius: 3px; background: var(--border); }
+  .timeline span.on { background: var(--teal); }
+  .tl-lab { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+  details summary.meta { cursor: pointer; padding: 6px 0; }
+
+  .footer-note { font-size: 11px; color: #999; text-align: center; margin: 18px auto 0; max-width: 620px; padding: 0 14px; line-height: 1.5; }
+  #toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #222; color: #fff; padding: 10px 18px; border-radius: 20px;
+    font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 100;
+  }
+  #toast.show { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <img src="icon-192.png" alt="IN NEURO">
+  <div>
+    <h1>IN NEURO — Cefaleia</h1>
+    <p>Da dor à guia autorizada · Dr. Alfredo Magalhães</p>
+  </div>
+</header>
+
+<main>
+  <details class="pac" id="bloco_pac">
+    <summary>Dados do paciente</summary>
+    <div class="grid">
+      <label>Nome <input id="p_nome" autocomplete="off"></label>
+      <label>Operadora <input id="p_op" autocomplete="off"></label>
+      <label>Carteirinha <input id="p_cart" autocomplete="off"></label>
+      <label>Protocolo da negativa <input id="p_prot" autocomplete="off"></label>
+      <label>Data da negativa <input id="p_data" type="date"></label>
+      <label>Data da solicitação <input id="p_sol" type="date"></label>
+    </div>
+    <p class="hint meta" style="margin-top:10px">Os dados ficam apenas neste aparelho, na sessão do navegador. Nada é enviado ou salvo em servidor.</p>
+  </details>
+
+  <div class="via" id="via"></div>
+</main>
+
+<p class="footer-note" id="foot"></p>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* =====================================================================
+   IN NEURO Cefaleia — mecânica do algoritmo.
+   Toda regra clínica, código, dose, material e referência vem de
+   data/algoritmo.json. Nada disso é escrito aqui.
+   ===================================================================== */
+
+let KB = null;
+
+const S = {
+  pac: { nome:'', op:'', cart:'', prot:'', data:'', sol:'' },
+  dor: null,
+  crit: new Set(), alarme: new Set(), laudo: new Set(),
+  proc: null, dos: new Set(), glosa: '',
+  teste: novoTeste()
+};
+function novoTeste(){ return {alvo:'', lado:'', farm:'lidocaina', data:'', pre:'', min:'', janela:false, retorno:false, dias:'', semanas:''}; }
+
+const RISCO = {
+  'baixo':        {cor:'var(--baixo)', txt:'Risco de glosa baixo'},
+  'moderado':     {cor:'var(--moderado)', txt:'Risco de glosa moderado'},
+  'moderado-alto':{cor:'var(--moderado-alto)', txt:'Risco de glosa moderado a alto'},
+  'alto':         {cor:'var(--alto)', txt:'Risco de glosa alto'},
+  'nao':          {cor:'var(--nao)', txt:'Não solicitar'}
+};
+const CURTA = {
+  ichd3:'ICHD-3, 2018', blumenfeld:'Blumenfeld et al., 2013', preempt1:'Aurora et al., 2010', preempt2:'Diener et al., 2010',
+  preemptpool:'Dodick et al., 2010', nice260:'NICE TA260, 2012', conitec70:'Conitec CP 70/2026', ambrosini:'Ambrosini et al., 2005',
+  leroux:'Leroux et al., 2011', cohen2015:'Cohen et al., 2015', vanelderen:'Vanelderen et al., 2010', sanders:'Sanders & Zuurmond, 1997',
+  narouze:'Narouze et al., 2009', kanpolat:'Kanpolat et al., 2001', ean_nt:'Bendtsen et al., 2019 (EAN)', erdine:'Erdine et al., 2007', dut62:'ANS, DUT 62', fang2016:'Fang et al., 2016', prf_rs2024:'Revisão sistemática, Can J Pain 2024'
+};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* Itens [confirmar] / [PREENCHER] nunca são removidos nem substituídos:
+   aparecem destacados em toda a interface. */
+const PEND = /\[(?:confirmar|PREENCHER)[^\]]*\]/g;
+const pend = s => esc(s).replace(PEND, m => `<mark class="pend">${m}</mark>`);
+
+const pac = () => ({
+  nome: S.pac.nome.trim() || '[nome do paciente]',
+  op: S.pac.op.trim() || '[operadora]',
+  cart: S.pac.cart.trim() || '[carteirinha]',
+  prot: S.pac.prot.trim() || '[protocolo]',
+  data: fmt(S.pac.data) || '[data da negativa]',
+  sol: fmt(S.pac.sol) || '[data da solicitação]'
+});
+function fmt(v){ if(!v) return ''; const [y,m,d]=v.split('-'); return `${d}/${m}/${y}`; }
+
+const dor = () => S.dor ? KB.cefaleias[S.dor] : null;
+const pd  = () => (S.dor && S.proc) ? dor().proc[S.proc] : null;
+const pb  = () => S.proc ? KB.procedimentos[S.proc] : null;
+
+function examesDoCaso(){
+  const c = dor(); if(!c) return [];
+  let lista = c.exames.slice();
+  if(S.alarme.size && !lista.some(e=>e.id==='rm_cranio')){
+    lista.unshift({id:'rm_cranio', quando:'Sinal de alarme presente', just:'Sinal de alarme — exclusão de cefaleia secundária.'});
+  }
+  return lista.map(e => ({...e, ...KB.exames[e.id]}));
+}
+const isOpt = e => /Opcional|Apenas|Se o serviço|Suspeita/.test(e.quando);
+function codigosDoCaso(){ const p=pd(); return (p && p.codigos) ? p.codigos : (pb() ? pb().codigos : []); }
+function materiaisDoCaso(){ return [...(pb()?.materiais||[]), ...(pd()?.materiais_extra||[])]; }
+function medsDoCaso(){ return pd()?.medicamentos || pb()?.medicamentos || []; }
+
+const precisaTeste = () => S.proc==='rf' && (KB.bloqueio_teste.aplica||[]).includes(S.dor);
+function veredito(){
+  const T=S.teste, B=KB.bloqueio_teste;
+  if(!T.data || T.pre==='' || T.min==='') return {k:'pendente', cor:'var(--nao)', tit:'Bloqueio teste ainda não registrado', txt:'Primeiro passo: realizar o bloqueio anestésico teste do alvo. A guia está logo abaixo.'};
+  const pre=+T.pre, min=+T.min, pct = pre>0 ? Math.round((pre-min)/pre*100) : 0, sem = T.semanas==='' ? 0 : +T.semanas;
+  const jan = B.anestesicos[T.farm].janela;
+  if(pct<50 || !T.janela) return {k:'negativo', pct, cor:'var(--alto)', tit:`Teste negativo (${pct}% de alívio)`, txt:`${pct<50?'Alívio abaixo de 50%.':'Alívio não sustentado por '+jan+'.'} Radiofrequência pulsada não indicada — rever diagnóstico, alvo ou técnica do bloqueio.`};
+  if(T.retorno) return {k:'indicada', pct, cor:'var(--baixo)', tit:`Teste positivo (${pct}%) com retorno da dor`, txt:`Radiofrequência pulsada do mesmo alvo indicada. As próximas etapas foram liberadas.`};
+  if(sem >= B.observacao_max_sem) return {k:'sustentado', pct, cor:'var(--teal)', tit:`Alívio sustentado por ${sem} semanas`, txt:'Sem indicação de radiofrequência agora: repetir o bloqueio quando a dor voltar e reavaliar.'};
+  return {k:'observacao', pct, cor:'var(--moderado)', tit:`Teste positivo (${pct}%) — em observação`, txt:`Manter o tratamento medicamentoso e reavaliar entre ${B.observacao_min_sem} e ${B.observacao_max_sem} semanas. Se a dor voltar, marque abaixo.`};
+}
+function frasesTeste(){
+  if(!precisaTeste()) return '';
+  const T=S.teste, v=veredito(); if(v.k!=='indicada') return '';
+  const f=KB.bloqueio_teste.anestesicos[T.farm];
+  return `Em ${fmt(T.data)} foi realizado bloqueio anestésico teste (${(T.alvo||'[alvo]').toLowerCase()}${T.lado?', '+T.lado.toLowerCase():''}) com ${f.nome.toLowerCase()}, com redução da dor de ${T.pre} para ${T.min}/10 (${v.pct}% de alívio), sustentada por pelo menos ${f.janela} — teste positivo pelo critério de ≥50% de alívio na janela do anestésico (Cohen et al., 2015). A dor retornou após ${T.dias||'[x]'} dias${T.semanas?', dentro do período de observação de '+T.semanas+' semanas':''}, apesar do tratamento medicamentoso.`;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const trava = precisaTeste() && veredito().k!=='indicada';
+  const depois = [stepDossie(), stepGuia(), stepRelatorio(), stepGlosa()].map(s => trava ? {titulo:s.titulo, sub:'Liberada após bloqueio teste positivo com retorno da dor.', locked:true} : s);
+  const steps = [stepDor(), stepCrit(), stepExames(), stepProc(), ...(precisaTeste()?[stepTeste()]:[]), ...depois];
+  $('via').innerHTML = steps.map((s,i)=>`
+    <section class="step ${s.done?'done':''} ${s.locked?'locked':''}" aria-disabled="${!!s.locked}">
+      <div class="dot">${i+1}</div>
+      <h2>${s.titulo}</h2>${s.sub?`<p class="sub">${s.sub}</p>`:''}
+      ${s.locked ? '' : s.html}
+    </section>`).join('');
+  bind();
+  salvar();
+}
+
+function stepDor(){
+  const html = `<div class="dores">${Object.entries(KB.cefaleias).map(([id,c])=>`
+    <button class="dor" data-dor="${id}" aria-pressed="${S.dor===id}"><b>${esc(c.nome)}</b><span>${esc(c.assinatura)}</span></button>`).join('')}</div>`;
+  return {titulo:'Qual é a dor?', sub:'Tudo o que vem depois se ajusta a esta escolha.', html, done:!!S.dor};
+}
+
+function stepCrit(){
+  const c = dor(); if(!c) return {titulo:'Critérios e sinais de alarme', locked:true};
+  const html = `
+    <div class="box"><h3>${pend(c.ichd)} · CID ${pend(c.cid)}</h3>
+      ${c.criterios.map((t,i)=>chk('crit',i,t,S.crit.has(i))).join('')}
+    </div>
+    <div class="box"><h3>Sinais de alarme (SNNOOP10)</h3>
+      ${KB.alarme.map((t,i)=>chk('alarme',i,t,S.alarme.has(i))).join('')}
+    </div>
+    ${S.alarme.size?`<div class="flag">Há sinal de alarme: a RM de crânio entra como exame obrigatório e o procedimento só depois de excluída causa secundária.</div>`:''}`;
+  return {titulo:'Critérios e sinais de alarme', sub:'Marque o que está documentado no prontuário.', html, done:S.crit.size===c.criterios.length};
+}
+
+function stepExames(){
+  const c = dor(); if(!c) return {titulo:'Exames de imagem', locked:true};
+  const ex = examesDoCaso();
+  const txt = textoExames(ex);
+  const html = `
+    <div class="box">${ex.map(e=>`
+      <div class="exame">
+        <div class="t">${pend(e.nome)} <span class="tuss">${pend(e.tuss)}</span></div>
+        <div class="meta">Quando: ${esc(e.quando)}</div>
+        <label class="chk"><input type="checkbox" data-laudo="${e.id}" ${S.laudo.has(e.id)?'checked':''}> Já tenho laudo recente</label>
+      </div>`).join('')}
+    </div>
+    <details><summary class="meta">Solicitação de exames (texto)</summary>
+      <pre class="out" id="o_ex">${pend(txt)}</pre>
+      <div class="actions"><button class="btn ghost" data-copy="o_ex">Copiar solicitação</button></div>
+    </details>`;
+  return {titulo:'Exames de imagem', sub:'Cada exame sai com código e justificativa, o que evita a glosa do próprio exame.', html, done:ex.every(e=>S.laudo.has(e.id) || isOpt(e))};
+}
+
+function stepProc(){
+  const c = dor(); if(!c) return {titulo:'Procedimento', locked:true};
+  const html = `<div class="procs">${['bloqueio','botox','rf'].map(id=>{
+    const p = c.proc[id], r = RISCO[p.risco], bloqueado = p.risco==='nao';
+    const extra = p.modalidade ? ` · ${esc(p.modalidade)}` : '';
+    return `<button class="proc" data-proc="${id}" aria-pressed="${S.proc===id}" ${bloqueado?'disabled':''}>
+      <span class="lamp" style="background:${r.cor}"></span>
+      <span><b>${esc(KB.procedimentos[id].nome)}${extra}</b>
+      <span class="risk" style="color:${r.cor}">${r.txt}</span><br><span class="n">${esc(p.nota)}</span></span>
+    </button>`;}).join('')}</div>`;
+  return {titulo:'Procedimento', sub:'O semáforo combina evidência, cobertura no Rol e histórico de auditoria.', html, done:!!S.proc};
+}
+
+function stepTeste(){
+  const B=KB.bloqueio_teste, T=S.teste, v=veredito(), alvos=B.alvos[S.dor];
+  const sem = T.semanas==='' ? 0 : Math.min(+T.semanas, B.observacao_max_sem);
+  const barras = Array.from({length:B.observacao_max_sem},(_,i)=>`<span class="${i<sem?'on':''}"></span>`).join('');
+  const opt = (arr,val) => arr.map(a=>`<option ${a===val?'selected':''}>${esc(a)}</option>`).join('');
+  const html = `
+    <div class="verd" style="border-left:5px solid ${v.cor}"><b style="color:${v.cor}">${esc(v.tit)}</b>${esc(v.txt)}</div>
+    <div class="box"><h3>1. Bloqueio teste</h3>
+      <div class="f2">
+        <label class="full">Alvo<select data-t="alvo"><option value="">Selecione…</option>${opt(alvos,T.alvo)}</select></label>
+        <label>Lado<select data-t="lado"><option value="">Selecione…</option>${opt(['Direito','Esquerdo','Bilateral'],T.lado)}</select></label>
+        <label class="full">Anestésico<select data-t="farm">${Object.entries(B.anestesicos).map(([k,a])=>`<option value="${k}" ${k===T.farm?'selected':''}>${esc(a.nome)}</option>`).join('')}</select></label>
+        <label>Data do bloqueio<input type="date" data-t="data" value="${esc(T.data)}"></label>
+        <label>Dor antes (0–10)<input type="number" min="0" max="10" inputmode="numeric" data-t="pre" value="${esc(T.pre)}"></label>
+        <label>Menor dor após (0–10)<input type="number" min="0" max="10" inputmode="numeric" data-t="min" value="${esc(T.min)}"></label>
+      </div>
+      <label class="chk"><input type="checkbox" data-tc="janela" ${T.janela?'checked':''}><span>Alívio mantido por pelo menos ${esc(B.anestesicos[T.farm].janela)} (janela do anestésico escolhido)</span></label>
+      <p class="meta">${esc(B.criterio_positivo)}</p>
+      <details><summary class="meta">Guia do bloqueio teste e ficha de dor para o paciente</summary>
+        <pre class="out" id="o_bt">${pend(textoGuiaTeste())}</pre>
+        <div class="actions"><button class="btn ghost" data-copy="o_bt">Copiar guia do bloqueio</button></div>
+        <pre class="out" id="o_ficha">${pend(textoFicha())}</pre>
+        <div class="actions"><button class="btn ghost" data-copy="o_ficha">Copiar ficha do paciente</button></div>
+      </details>
+    </div>
+    <div class="box"><h3>2. Observação com tratamento medicamentoso</h3>
+      <div class="f2">
+        <label>Semanas desde o bloqueio<input type="number" min="0" max="52" inputmode="numeric" data-t="semanas" value="${esc(T.semanas)}"></label>
+        <label>Dias de alívio<input type="number" min="0" max="365" inputmode="numeric" data-t="dias" value="${esc(T.dias)}"></label>
+      </div>
+      <div class="timeline" aria-hidden="true">${barras}</div>
+      <div class="tl-lab"><span>0</span><span>${B.observacao_min_sem} sem</span><span>${B.observacao_max_sem} sem</span></div>
+      <label class="chk"><input type="checkbox" data-tc="retorno" ${T.retorno?'checked':''}><span>A dor voltou apesar da medicação</span></label>
+      <p class="meta">${esc(B.nota_literatura)}</p>
+    </div>`;
+  return {titulo:'Bloqueio teste e observação', sub:'A radiofrequência pulsada só é liberada depois de um teste positivo com retorno da dor.', html, done:v.k==='indicada'};
+}
+function textoGuiaTeste(){
+  const c=dor(), T=S.teste, P=pac(), f=KB.bloqueio_teste.anestesicos[T.farm];
+  return [
+    `GUIA DE SOLICITAÇÃO DE PROCEDIMENTO — BLOQUEIO ANESTÉSICO TESTE`,
+    `Paciente: ${P.nome} | Operadora: ${P.op} | Carteirinha: ${P.cart}`, '',
+    `# DIAGNÓSTICO:`, `* ${c.nome} — ${c.ichd} — CID ${c.cid}`, '',
+    `# INDICAÇÃO:`, `Bloqueio anestésico com finalidade diagnóstica e terapêutica, pré-requisito para avaliação de radiofrequência pulsada do mesmo alvo. Será considerado positivo o alívio ≥50% da dor durante a ação do anestésico.`, '',
+    `# PROCEDIMENTO:`, `* ${T.alvo||'[alvo]'}${T.lado?' — '+T.lado.toLowerCase():''}`, '',
+    `# CÓDIGOS:`, ...KB.procedimentos.bloqueio.codigos.map(k=>`* ${k.tuss} — ${k.desc} — qtd.: ${k.qtd}`), '',
+    `# MATERIAIS:`, ...KB.procedimentos.bloqueio.materiais.map(m=>`* ${m}`), '',
+    `# MEDICAMENTOS:`, `* ${f.nome} — 1 unidade`, '',
+    `# CID:`, `* ${c.cid}`
+  ].join('\n');
+}
+function textoFicha(){
+  const P=pac();
+  return [
+    `FICHA DE DOR APÓS O BLOQUEIO — ${P.nome}`,
+    `Anote a dor de 0 (sem dor) a 10 (pior dor possível).`, '',
+    `Antes do bloqueio: ___`,
+    `30 minutos depois: ___`,
+    `1 hora depois: ___`,
+    `3 horas depois: ___`,
+    `24 horas depois: ___`, '',
+    `Quantos dias a melhora durou? ___`,
+    `Em que data a dor voltou? ___/___/______`,
+    `Remédios que tomou no período: ______________________`, '',
+    `Traga esta ficha na consulta de retorno.`
+  ].join('\n');
+}
+
+function stepDossie(){
+  const p = pd(); if(!p) return {titulo:'Dossiê do pedido', locked:true};
+  if(precisaTeste() && veredito().k==='indicada'){ p.check.forEach((t,i)=>{ if(/^Bloqueio teste positivo/.test(t)) S.dos.add(i); }); }
+  const tot = p.check.length, ok = S.dos.size, pct = Math.round(ok/tot*100);
+  const falta = tot-ok;
+  const msg = falta===0 ? 'Dossiê completo — pode gerar a guia.' : `Faltam ${falta} ${falta>1?'itens':'item'}: pedido incompleto é a principal causa de glosa evitável.`;
+  const html = `<div class="box">
+      ${p.check.map((t,i)=>chk('dos',i,t,S.dos.has(i))).join('')}
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="ready" style="color:${falta?'var(--moderado-alto)':'var(--baixo)'}">${msg}</div>
+    </div>
+    ${p.alerta?`<div class="note">${pend(p.alerta)}</div>`:''}
+    ${pb().alerta_base?`<div class="note">${pend(pb().alerta_base)}</div>`:''}`;
+  return {titulo:'Dossiê do pedido', sub:'O que o auditor vai procurar, na ordem em que procura.', html, done:falta===0};
+}
+
+function stepGuia(){
+  const p = pd(); if(!p) return {titulo:'Guia: códigos, materiais e medicamentos', locked:true};
+  const cods = codigosDoCaso();
+  const txt = textoGuia();
+  const html = `
+    <div class="box"><h3>Códigos</h3>
+      ${cods.map(k=>`<div class="cod"><span class="tuss">${pend(k.tuss)}</span><span class="d">${pend(k.desc)}</span><span class="q">Qtd.: ${pend(k.qtd)}${k.ref?' · '+pend(k.ref):''}</span></div>`).join('')}
+    </div>
+    <div class="box"><h3>Remuneração legítima: o que não deixar de fora</h3>
+      <ul class="l legit">
+        <li>O código mais específico para o ato realizado${S.proc==='rf'&&S.dor==='trigemeo'?' (31404030, não o genérico 31403336)':''}.</li>
+        ${cods.some(k=>k.tuss==='40811026')?'<li>Radioscopia 40811026 por hora ou fração, anotando o tempo real.</li>':''}
+        <li>Quantidade por nervo, lado ou segmento, quando a operadora remunera assim.</li>
+        ${S.proc==='rf'?'<li>Sedação/anestesia e rotina pré-operatória solicitadas à parte.</li>':''}
+        <li>Tabela de valores por operadora preenchida no app: entre códigos igualmente corretos, ele sugere o de maior porte.</li>
+        <li class="no">Nunca: código neurolítico (31602134) em bloqueio só com anestésico/corticoide, nem código de outro procedimento.</li>
+      </ul>
+    </div>
+    <pre class="out" id="o_guia">${pend(txt)}</pre>
+    <div class="actions"><button class="btn" data-copy="o_guia">Copiar guia</button></div>`;
+  return {titulo:'Guia: códigos, materiais e medicamentos', sub:'Texto no padrão das seções da Guia IN NEURO.', html, done:true};
+}
+
+function stepRelatorio(){
+  const p = pd(); if(!p) return {titulo:'Relatório de justificativa técnica', locked:true};
+  const txt = textoRelatorio();
+  const html = `<pre class="out" id="o_rel">${pend(txt)}</pre>
+    <div class="actions"><button class="btn" data-copy="o_rel">Copiar relatório</button></div>`;
+  return {titulo:'Relatório de justificativa técnica', sub:'Anexo da guia, com as referências fixas do caso.', html, done:true};
+}
+
+function stepGlosa(){
+  const p = pd(); if(!p) return {titulo:'Se houver negativa', locked:true};
+  const opts = Object.entries(KB.glosas).map(([id,g])=>`<option value="${id}" ${S.glosa===id?'selected':''}>${esc(g.nome)}</option>`).join('');
+  let corpo = '';
+  if(S.glosa){
+    const g = KB.glosas[S.glosa];
+    const interno = (S.glosa==='fora_rol' && g.interno && (S.proc==='botox' && S.dor==='enxaqueca')) ? `<div class="flag">${esc(g.interno)}</div>` : '';
+    corpo = `${interno}
+      <div class="box"><h3>1. Reanálise na Ouvidoria (o senhor envia)</h3></div>
+      <pre class="out" id="o_ouv">${pend(textoOuvidoria())}</pre>
+      <div class="actions"><button class="btn" data-copy="o_ouv">Copiar pedido de reanálise</button></div>
+      <div class="box"><h3>2. Se mantida: NIP (o paciente registra)</h3>
+        <ul class="l"><li>Portal da ANS ou Disque ANS 0800 701 9656.</li><li>Guardar o número da NIP.</li><li>NIP assistencial: a operadora tem até 5 dias úteis.</li></ul>
+      </div>
+      <pre class="out" id="o_nip">${pend(textoNIP())}</pre>
+      <div class="actions"><button class="btn" data-copy="o_nip">Copiar texto da NIP</button></div>
+      <div class="note">Se a NIP não resolver, o dossiê já está montado nos 5 requisitos da ADI 7265 para o jurídico.</div>`;
+  }
+  const html = `<label class="meta" for="glosa">Motivo alegado pela operadora</label>
+    <select id="glosa"><option value="">Selecione…</option>${opts}</select>${corpo}`;
+  return {titulo:'Se houver negativa', sub:'Negativa por escrito (RN 623/2024) → Ouvidoria → NIP → jurídico.', html, done:!!S.glosa};
+}
+
+function chk(grupo,i,t,on){
+  return `<label class="chk"><input type="checkbox" data-g="${grupo}" data-i="${i}" ${on?'checked':''}><span>${pend(t)}</span></label>`;
+}
+
+/* ---------- Textos gerados ---------- */
+function refsCurta(){ return (pd()?.refs||[]).map(r=>CURTA[r]||r).join('; '); }
+function refsLonga(){ return (pd()?.refs||[]).map((r,i)=>`${i+1}. ${KB.referencias[r]}`).join('\n'); }
+function codLinha(){ return codigosDoCaso().map(k=>`${k.tuss} (${k.desc})`).join(' + '); }
+
+function textoExames(ex){
+  const c=dor(), P=pac();
+  return `SOLICITAÇÃO DE EXAMES\nPaciente: ${P.nome} | Operadora: ${P.op} | Carteirinha: ${P.cart}\n\n`+
+    ex.map(e=>`* ${e.nome}${isOpt(e)?' (se indicado)':''} — TUSS ${e.tuss}\n  Indicação: ${e.just}\n  Hipótese: ${c.nome} (${c.ichd}) — CID ${c.cid}`).join('\n\n');
+}
+function textoGuia(){
+  const c=dor(), p=pd(), P=pac();
+  const crit = c.criterios.filter((_,i)=>S.crit.has(i));
+  const ex = examesDoCaso();
+  return [
+    `GUIA DE SOLICITAÇÃO DE PROCEDIMENTO — ${KB.procedimentos[S.proc].nome.toUpperCase()}`,
+    `Paciente: ${P.nome} | Operadora: ${P.op} | Carteirinha: ${P.cart}`, '',
+    `# DIAGNÓSTICO:`, `* ${c.nome} — ${c.ichd} — CID ${c.cid}`, '',
+    `# CRITÉRIOS DIAGNÓSTICOS ATENDIDOS:`, ...(crit.length?crit.map(t=>`* ${t}`):['* [marcar na etapa 2]']), '',
+    `# EXAMES COMPLEMENTARES:`, ...ex.filter(e=>S.laudo.has(e.id)||!isOpt(e)).map(e=>`* ${e.nome}${S.laudo.has(e.id)?' — laudo anexo':' — solicitado'}`), '',
+    `# TRATAMENTOS PRÉVIOS:`, `* [medicamento — dose — período — desfecho]`, '',
+    `# INDICAÇÃO:`, ...(frasesTeste()?[frasesTeste()]:[]), p.racional, '',
+    `# PROCEDIMENTO:`, `* ${p.alvo || p.nervos || ''}${p.modalidade?' — técnica: radiofrequência '+p.modalidade.toLowerCase():''}`, '',
+    `# CÓDIGOS:`, ...codigosDoCaso().map(k=>`* ${k.tuss} — ${k.desc} — qtd.: ${k.qtd}`), '',
+    `# MATERIAIS:`, ...materiaisDoCaso().map(m=>`* ${m}`), '',
+    `# MEDICAMENTOS:`, ...medsDoCaso().map(m=>`* ${m}`), '',
+    `# CID:`, `* ${c.cid}`
+  ].join('\n');
+}
+function textoRelatorio(){
+  const c=dor(), p=pd(), P=pac();
+  const crit = c.criterios.filter((_,i)=>S.crit.has(i));
+  const dos = p.check.filter((_,i)=>S.dos.has(i));
+  return [
+    `RELATÓRIO MÉDICO — JUSTIFICATIVA TÉCNICA`, '',
+    `Paciente ${P.nome}, beneficiário(a) da ${P.op} (carteirinha ${P.cart}), em acompanhamento neurocirúrgico por ${c.nome.toLowerCase()} (${c.ichd}; CID ${c.cid}).`, '',
+    crit.length ? `O quadro preenche os critérios diagnósticos: ${crit.join('; ').toLowerCase()}.` : `[Descrever os critérios diagnósticos atendidos.]`, '',
+    dos.length ? `Documentação que acompanha o pedido: ${dos.join('; ').toLowerCase()}.` : `[Completar o dossiê.]`, '',
+    ...(frasesTeste()?[frasesTeste(), '']:[]),
+    p.racional, '',
+    `Diante do exposto, solicito autorização para ${KB.procedimentos[S.proc].nome.toLowerCase()} — ${codLinha()}.`, '',
+    `Referências:`, refsLonga(), '',
+    `${KB.meta.medico.nome} — Neurocirurgião — ${KB.meta.medico.crm} — ${KB.meta.medico.rqe}`
+  ].join('\n');
+}
+function preencher(t){
+  const c=dor();
+  return t.replaceAll('{dx}', c.nome.toLowerCase()).replaceAll('{cid}', c.cid).replaceAll('{refs}', refsCurta());
+}
+function textoOuvidoria(){
+  const c=dor(), p=pd(), P=pac(), g=KB.glosas[S.glosa];
+  return [
+    `À Ouvidoria da ${P.op}`,
+    `Pedido de reanálise de negativa de cobertura (RN ANS 623/2024)`, '',
+    `Paciente: ${P.nome} — Carteirinha: ${P.cart}`,
+    `Protocolo: ${P.prot} — Negativa em: ${P.data}`,
+    `Procedimento: ${KB.procedimentos[S.proc].nome} — ${codLinha()}`,
+    `Diagnóstico: ${c.nome} (${c.ichd}; CID ${c.cid})`, '',
+    preencher(g.ouvidoria), '',
+    `Indicação clínica: ${p.racional}`, '',
+    `Requer-se a reanálise do pedido, com resposta por escrito e fundamentada, nos termos da RN ANS 623/2024.`, '',
+    `${KB.meta.medico.nome} — Neurocirurgião — ${KB.meta.medico.crm} — ${KB.meta.medico.rqe}`
+  ].join('\n');
+}
+function textoNIP(){
+  const c=dor(), P=pac(), g=KB.glosas[S.glosa];
+  return `Sou beneficiário(a) da ${P.op}, carteirinha ${P.cart}. Em ${P.sol}, meu médico assistente, ${KB.meta.medico.nome} (${KB.meta.medico.crm}), solicitou autorização para ${KB.procedimentos[S.proc].nome.toLowerCase()} para tratamento de ${c.nome.toLowerCase()}. Em ${P.data} a operadora negou o pedido (protocolo ${P.prot}): ${g.nip}. Pedi reanálise à Ouvidoria e a negativa foi mantida. Solicito a intermediação da ANS para que o procedimento seja autorizado.\n\nTenho em mãos: pedido e relatório do médico, negativa por escrito da operadora e exames.`;
+}
+
+/* ---------- Eventos ---------- */
+function bind(){
+  document.querySelectorAll('[data-dor]').forEach(b=>b.onclick=()=>{
+    if(S.dor!==b.dataset.dor){ S.dor=b.dataset.dor; S.crit.clear(); S.laudo.clear(); S.proc=null; S.dos.clear(); S.glosa=''; S.teste=novoTeste(); }
+    render();
+  });
+  document.querySelectorAll('[data-proc]').forEach(b=>b.onclick=()=>{
+    if(S.proc!==b.dataset.proc){ S.proc=b.dataset.proc; S.dos.clear(); S.glosa=''; S.teste=novoTeste(); }
+    render();
+  });
+  document.querySelectorAll('input[data-g]').forEach(i=>i.onchange=()=>{
+    const set = {crit:S.crit, alarme:S.alarme, dos:S.dos}[i.dataset.g];
+    const n = +i.dataset.i; i.checked ? set.add(n) : set.delete(n); render();
+  });
+  document.querySelectorAll('input[data-laudo]').forEach(i=>i.onchange=()=>{
+    i.checked ? S.laudo.add(i.dataset.laudo) : S.laudo.delete(i.dataset.laudo); render();
+  });
+  document.querySelectorAll('[data-t]').forEach(el=>el.onchange=()=>{ S.teste[el.dataset.t]=el.value; render(); });
+  document.querySelectorAll('[data-tc]').forEach(el=>el.onchange=()=>{ S.teste[el.dataset.tc]=el.checked; render(); });
+  const g=$('glosa'); if(g) g.onchange=()=>{ S.glosa=g.value; render(); };
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copiar($(b.dataset.copy).textContent));
+}
+function copiar(t){
+  const ok=()=>toast('Copiado');
+  if(navigator.clipboard) navigator.clipboard.writeText(t).then(ok,()=>fallback(t));
+  else fallback(t);
+}
+function fallback(t){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); try{document.execCommand('copy');toast('Copiado');}catch(e){toast('Selecione e copie manualmente');} a.remove(); }
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+/* ---------- Sessão (só neste aparelho — LGPD) ---------- */
+const CHAVE = 'in-neuro-cefaleia:sessao';
+function salvar(){
+  try {
+    sessionStorage.setItem(CHAVE, JSON.stringify({
+      pac:S.pac, dor:S.dor, proc:S.proc, glosa:S.glosa, teste:S.teste,
+      crit:[...S.crit], alarme:[...S.alarme], laudo:[...S.laudo], dos:[...S.dos]
+    }));
+  } catch(e) { /* modo privado ou storage cheio: segue sem persistir */ }
+}
+function carregar(){
+  try {
+    const r = JSON.parse(sessionStorage.getItem(CHAVE) || 'null');
+    if(!r) return;
+    S.pac = Object.assign(S.pac, r.pac||{});
+    S.dor = r.dor; S.proc = r.proc; S.glosa = r.glosa || '';
+    S.teste = Object.assign(novoTeste(), r.teste||{});
+    S.crit = new Set(r.crit||[]); S.alarme = new Set(r.alarme||[]);
+    S.laudo = new Set(r.laudo||[]); S.dos = new Set(r.dos||[]);
+  } catch(e) { /* sessão corrompida: começa limpa */ }
+}
+
+const CAMPOS = {p_nome:'nome', p_op:'op', p_cart:'cart', p_prot:'prot', p_data:'data', p_sol:'sol'};
+function bindPaciente(){
+  Object.entries(CAMPOS).forEach(([id,k])=>{
+    const el = $(id);
+    el.value = S.pac[k] || '';
+    el.addEventListener('input', ()=>{ S.pac[k] = el.value; salvar(); if(S.dor) render(); });
+  });
+  if(S.pac.nome || S.pac.op) $('bloco_pac').open = true;
+}
+
+/* ---------- Início ---------- */
+async function iniciar(){
+  try {
+    const resp = await fetch('data/algoritmo.json', {cache:'no-cache'});
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    KB = await resp.json();
+  } catch(e) {
+    $('via').innerHTML = `<div class="flag"><b>Não foi possível carregar a base clínica</b> (data/algoritmo.json — ${esc(e.message)}).<br>
+      Se abriu o arquivo direto do disco, use um servidor local (o navegador bloqueia o carregamento por file://).</div>`;
+    return;
+  }
+  carregar();
+  bindPaciente();
+  $('foot').textContent = `Base v${KB.meta.versao} (${KB.meta.data}). ${KB.meta.aviso}`;
+  render();
+}
+iniciar();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>

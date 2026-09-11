@@ -1,0 +1,23 @@
+[build]
+  publish = "."
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# O service worker, o app e a base clínica não podem ficar presos no cache do
+# navegador: uma correção de regra tem de chegar no próximo acesso.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/data/algoritmo.json"
+  [headers.values]
+    Cache-Control = "no-cache"
