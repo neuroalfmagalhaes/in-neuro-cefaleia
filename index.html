@@ -162,6 +162,31 @@
     font: 14px inherit; font-family: inherit; padding: 9px 10px; border: 1px solid var(--border);
     border-radius: 8px; background: #fbfcfc; color: #1a1a1a; width: 100%;
   }
+  /* Widget de anexo: colar (Ctrl+V), arrastar, camera ou arquivo */
+  .zona {
+    border: 1.5px dashed var(--teal); border-radius: 10px; background: #e1e6f0;
+    padding: 14px; text-align: center; color: var(--teal-dark);
+  }
+  .zona.ativa, .zona.sobre { background: #cfdaee; border-style: solid; }
+  .zona .conv { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+  .zona .conv small { display: block; font-weight: 400; color: var(--muted); margin-top: 3px; }
+  .zona input[type=file] {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 12.5px; background: #fff; color: var(--teal-dark);
+  }
+  .zona img.prev {
+    display: block; max-width: 100%; max-height: 240px; margin: 10px auto 0;
+    border-radius: 8px; border: 1px solid var(--border);
+  }
+  .st { font-size: 12.5px; margin-top: 8px; min-height: 1.2em; }
+  .st.loading { color: var(--teal); font-weight: 600; }
+  .st.error { color: #b23; font-weight: 600; }
+  .st.ok { color: #1a7d3a; font-weight: 600; }
+  .trat-item { border-top: 1px solid var(--border); padding: 12px 0 6px; }
+  .trat-item:first-of-type { border-top: 0; padding-top: 0; }
+  button.btn.mini { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
+  .vazio { font-size: 13px; color: var(--muted); font-style: italic; }
+
   .timeline { display: flex; gap: 4px; margin: 10px 0 2px; }
   .timeline span { flex: 1; height: 6px; border-radius: 3px; background: var(--border); }
   .timeline span.on { background: var(--teal); }
@@ -189,20 +214,102 @@
 </header>
 
 <main>
-  <details class="pac" id="bloco_pac">
-    <summary>Dados do paciente</summary>
-    <div class="grid">
-      <label>Nome <input id="p_nome" autocomplete="off"></label>
-      <label>Operadora <input id="p_op" autocomplete="off"></label>
-      <label>Carteirinha <input id="p_cart" autocomplete="off"></label>
-      <label>Protocolo da negativa <input id="p_prot" autocomplete="off"></label>
-      <label>Data da negativa <input id="p_data" type="date"></label>
-      <label>Data da solicitação <input id="p_sol" type="date"></label>
-    </div>
-    <p class="hint meta" style="margin-top:10px">Os dados ficam apenas neste aparelho, na sessão do navegador. Nada é enviado ou salvo em servidor.</p>
-  </details>
+  <div class="via">
 
-  <div class="via" id="via"></div>
+  <section class="step" id="etapa0">
+    <div class="dot">0</div>
+    <h2>Paciente e história</h2>
+    <p class="sub">Fotografe a carteirinha e cole o print do prontuário. A IA preenche, o senhor confere — tudo continua editável.</p>
+
+    <div class="box">
+      <h3>Carteirinha do convênio</h3>
+      <div class="zona" id="z_carteirinha" data-alvo="carteirinha">
+        <div class="conv">Cole com Ctrl+V, arraste a imagem ou toque abaixo
+          <small>No celular, abre a câmera.</small></div>
+        <input type="file" accept="image/*" id="f_carteirinha">
+        <img class="prev" id="prev_carteirinha" alt="Pré-visualização da carteirinha" hidden>
+      </div>
+      <div class="actions" id="acao_carteirinha" hidden>
+        <button class="btn" data-extrair="carteirinha">Extrair com IA</button>
+        <button class="btn ghost" data-limpar="carteirinha">Trocar imagem</button>
+      </div>
+      <div class="st" id="st_carteirinha"></div>
+    </div>
+
+    <div class="box">
+      <h3>História clínica</h3>
+      <div class="zona" id="z_historia" data-alvo="historia">
+        <div class="conv">Cole o print da tela com Ctrl+V, arraste ou toque abaixo
+          <small>A imagem vai para a IA só no momento da extração, e não é salva.</small></div>
+        <input type="file" accept="image/*" id="f_historia">
+        <img class="prev" id="prev_historia" alt="Pré-visualização do prontuário" hidden>
+      </div>
+      <div class="actions" id="acao_historia" hidden>
+        <button class="btn" data-extrair="historia">Extrair com IA</button>
+        <button class="btn ghost" data-limpar="historia">Trocar imagem</button>
+      </div>
+      <details>
+        <summary class="meta">Ou colar o texto do prontuário</summary>
+        <textarea id="txt_historia" rows="5" placeholder="Cole aqui o texto da evolução…" style="margin-top:8px"></textarea>
+        <div class="actions"><button class="btn ghost" id="btn_txt_historia">Extrair do texto</button></div>
+      </details>
+      <div class="st" id="st_historia"></div>
+    </div>
+
+    <div class="box">
+      <h3>Dados do paciente</h3>
+      <div class="grid">
+        <label>Nome <input id="p_nome" autocomplete="off"></label>
+        <label>CPF <input id="p_cpf" autocomplete="off" placeholder="digitar — a IA não lê CPF"></label>
+        <label>Nascimento <input id="p_nasc" autocomplete="off" placeholder="dd/mm/aaaa"></label>
+        <label>Operadora <input id="p_op" autocomplete="off"></label>
+        <label>Carteirinha <input id="p_cart" autocomplete="off"></label>
+        <label>Plano <input id="p_plano" autocomplete="off"></label>
+        <label>Acomodação <input id="p_acom" autocomplete="off"></label>
+        <label>Registro ANS <input id="p_ans" autocomplete="off"></label>
+        <label>Telefone <input id="p_tel" autocomplete="off"></label>
+        <label>E-mail <input id="p_email" autocomplete="off"></label>
+        <label>Endereço <input id="p_end" autocomplete="off"></label>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>História clínica (editável)</h3>
+      <label>História da doença atual</label>
+      <textarea id="c_hda" rows="5" placeholder="Preenchida pela extração, ou digite aqui…"></textarea>
+      <label>Exame neurológico</label>
+      <textarea id="c_exame" rows="3"></textarea>
+      <label>Exames complementares (uma linha por exame)</label>
+      <textarea id="c_examescompl" rows="3" placeholder="RM de coluna cervical: sem compressão radicular…"></textarea>
+      <div class="grid">
+        <label>CID citado no prontuário <input id="c_cid" autocomplete="off"></label>
+        <label>Dias de cefaleia por mês <input id="c_dias" inputmode="numeric" autocomplete="off"></label>
+        <label>MIDAS <input id="c_midas" inputmode="numeric" autocomplete="off"></label>
+        <label>HIT-6 <input id="c_hit6" inputmode="numeric" autocomplete="off"></label>
+      </div>
+    </div>
+
+    <div class="box">
+      <h3>Tratamentos prévios</h3>
+      <p class="meta">Dose, tempo de uso e desfecho de cada profilático. É o que a auditoria cobra quando alega "falha terapêutica não comprovada".</p>
+      <div id="trat_corpo"></div>
+      <div class="actions"><button class="btn ghost mini" id="btn_trat_add">+ Acrescentar medicamento</button></div>
+    </div>
+
+    <div class="box">
+      <h3>Se já houve negativa</h3>
+      <div class="grid">
+        <label>Protocolo da negativa <input id="p_prot" autocomplete="off"></label>
+        <label>Data da negativa <input id="p_data" type="date"></label>
+        <label>Data da solicitação <input id="p_sol" type="date"></label>
+      </div>
+    </div>
+
+    <p class="meta">Os dados ficam apenas neste aparelho, na sessão do navegador. Nada é salvo em servidor.</p>
+  </section>
+
+  <div id="via"></div>
+  </div>
 </main>
 
 <p class="footer-note" id="foot"></p>
@@ -218,7 +325,10 @@
 let KB = null;
 
 const S = {
-  pac: { nome:'', op:'', cart:'', prot:'', data:'', sol:'' },
+  pac: { nome:'', cpf:'', nasc:'', op:'', cart:'', plano:'', acom:'', ans:'',
+         tel:'', email:'', end:'', prot:'', data:'', sol:'' },
+  clin: { hda:'', exame:'', examescompl:'', cid:'', dias:'', midas:'', hit6:'' },
+  tratPrevios: [],
   dor: null,
   crit: new Set(), alarme: new Set(), laudo: new Set(),
   proc: null, dos: new Set(), glosa: '',
@@ -257,6 +367,16 @@ const pac = () => ({
   sol: fmt(S.pac.sol) || '[data da solicitação]'
 });
 function fmt(v){ if(!v) return ''; const [y,m,d]=v.split('-'); return `${d}/${m}/${y}`; }
+
+/* Linhas da tabela de tratamentos prévios, no formato da guia.
+   Lista vazia devolve o placeholder — o app nunca preenche tratamento por conta própria. */
+function linhasTratPrevios(){
+  const linhas = S.tratPrevios
+    .filter(t => (t.medicamento||'').trim())
+    .map(t => '* ' + [t.medicamento, t.dose, t.periodo, t.desfecho]
+      .map(v => (v||'').trim()).filter(Boolean).join(' — '));
+  return linhas.length ? linhas : ['* [medicamento — dose — período — desfecho]'];
+}
 
 const dor = () => S.dor ? KB.cefaleias[S.dor] : null;
 const pd  = () => (S.dor && S.proc) ? dor().proc[S.proc] : null;
@@ -519,9 +639,11 @@ function textoGuia(){
     `GUIA DE SOLICITAÇÃO DE PROCEDIMENTO — ${KB.procedimentos[S.proc].nome.toUpperCase()}`,
     `Paciente: ${P.nome} | Operadora: ${P.op} | Carteirinha: ${P.cart}`, '',
     `# DIAGNÓSTICO:`, `* ${c.nome} — ${c.ichd} — CID ${c.cid}`, '',
+    `# HISTÓRIA DA DOENÇA ATUAL:`, S.clin.hda.trim() || `* [preencher na etapa 0]`, '',
+    `# EXAME NEUROLÓGICO:`, S.clin.exame.trim() || `* [preencher na etapa 0]`, '',
     `# CRITÉRIOS DIAGNÓSTICOS ATENDIDOS:`, ...(crit.length?crit.map(t=>`* ${t}`):['* [marcar na etapa 2]']), '',
     `# EXAMES COMPLEMENTARES:`, ...ex.filter(e=>S.laudo.has(e.id)||!isOpt(e)).map(e=>`* ${e.nome}${S.laudo.has(e.id)?' — laudo anexo':' — solicitado'}`), '',
-    `# TRATAMENTOS PRÉVIOS:`, `* [medicamento — dose — período — desfecho]`, '',
+    `# TRATAMENTOS PRÉVIOS:`, ...linhasTratPrevios(), '',
     `# INDICAÇÃO:`, ...(frasesTeste()?[frasesTeste()]:[]), p.racional, '',
     `# PROCEDIMENTO:`, `* ${p.alvo || p.nervos || ''}${p.modalidade?' — técnica: radiofrequência '+p.modalidade.toLowerCase():''}`, '',
     `# CÓDIGOS:`, ...codigosDoCaso().map(k=>`* ${k.tuss} — ${k.desc} — qtd.: ${k.qtd}`), '',
@@ -539,6 +661,7 @@ function textoRelatorio(){
     `Paciente ${P.nome}, beneficiário(a) da ${P.op} (carteirinha ${P.cart}), em acompanhamento neurocirúrgico por ${c.nome.toLowerCase()} (${c.ichd}; CID ${c.cid}).`, '',
     crit.length ? `O quadro preenche os critérios diagnósticos: ${crit.join('; ').toLowerCase()}.` : `[Descrever os critérios diagnósticos atendidos.]`, '',
     dos.length ? `Documentação que acompanha o pedido: ${dos.join('; ').toLowerCase()}.` : `[Completar o dossiê.]`, '',
+    ...fraseTratPrevios(),
     ...(frasesTeste()?[frasesTeste(), '']:[]),
     p.racional, '',
     `Diante do exposto, solicito autorização para ${KB.procedimentos[S.proc].nome.toLowerCase()} — ${codLinha()}.`, '',
@@ -546,6 +669,21 @@ function textoRelatorio(){
     `${KB.meta.medico.nome} — Neurocirurgião — ${KB.meta.medico.crm} — ${KB.meta.medico.rqe}`
   ].join('\n');
 }
+/* Parágrafo dos tratamentos prévios no relatório. Sem tabela preenchida, não entra
+   nada — o relatório não afirma falha terapêutica que o médico não registrou. */
+function fraseTratPrevios(){
+  const t = S.tratPrevios.filter(x => (x.medicamento||'').trim());
+  if(!t.length) return [];
+  const itens = t.map(x => {
+    const partes = [x.medicamento.trim()];
+    if((x.dose||'').trim()) partes.push(x.dose.trim());
+    if((x.periodo||'').trim()) partes.push(x.periodo.trim());
+    const base = partes.join(', ');
+    return (x.desfecho||'').trim() ? `${base} (${x.desfecho.trim()})` : base;
+  }).join('; ');
+  return [`Tratamentos previamente utilizados, com dose, período e desfecho: ${itens}.`, ''];
+}
+
 function preencher(t){
   const c=dor();
   return t.replaceAll('{dx}', c.nome.toLowerCase()).replaceAll('{cid}', c.cid).replaceAll('{refs}', refsCurta());
@@ -604,8 +742,10 @@ function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show');
 const CHAVE = 'in-neuro-cefaleia:sessao';
 function salvar(){
   try {
+    // As imagens nunca entram aqui: vivem na memória da página até a extração.
     sessionStorage.setItem(CHAVE, JSON.stringify({
-      pac:S.pac, dor:S.dor, proc:S.proc, glosa:S.glosa, teste:S.teste,
+      pac:S.pac, clin:S.clin, tratPrevios:S.tratPrevios,
+      dor:S.dor, proc:S.proc, glosa:S.glosa, teste:S.teste,
       crit:[...S.crit], alarme:[...S.alarme], laudo:[...S.laudo], dos:[...S.dos]
     }));
   } catch(e) { /* modo privado ou storage cheio: segue sem persistir */ }
@@ -615,6 +755,8 @@ function carregar(){
     const r = JSON.parse(sessionStorage.getItem(CHAVE) || 'null');
     if(!r) return;
     S.pac = Object.assign(S.pac, r.pac||{});
+    S.clin = Object.assign(S.clin, r.clin||{});
+    S.tratPrevios = Array.isArray(r.tratPrevios) ? r.tratPrevios : [];
     S.dor = r.dor; S.proc = r.proc; S.glosa = r.glosa || '';
     S.teste = Object.assign(novoTeste(), r.teste||{});
     S.crit = new Set(r.crit||[]); S.alarme = new Set(r.alarme||[]);
@@ -622,14 +764,235 @@ function carregar(){
   } catch(e) { /* sessão corrompida: começa limpa */ }
 }
 
-const CAMPOS = {p_nome:'nome', p_op:'op', p_cart:'cart', p_prot:'prot', p_data:'data', p_sol:'sol'};
-function bindPaciente(){
-  Object.entries(CAMPOS).forEach(([id,k])=>{
+/* ---------- Etapa 0: campos ---------- */
+const CAMPOS = {
+  p_nome:'nome', p_cpf:'cpf', p_nasc:'nasc', p_op:'op', p_cart:'cart',
+  p_plano:'plano', p_acom:'acom', p_ans:'ans', p_tel:'tel', p_email:'email',
+  p_end:'end', p_prot:'prot', p_data:'data', p_sol:'sol'
+};
+const CLIN = {
+  c_hda:'hda', c_exame:'exame', c_examescompl:'examescompl',
+  c_cid:'cid', c_dias:'dias', c_midas:'midas', c_hit6:'hit6'
+};
+
+function bindCampos(){
+  const ligar = (mapa, alvo) => Object.entries(mapa).forEach(([id,k])=>{
     const el = $(id);
-    el.value = S.pac[k] || '';
-    el.addEventListener('input', ()=>{ S.pac[k] = el.value; salvar(); if(S.dor) render(); });
+    el.value = alvo[k] || '';
+    el.addEventListener('input', ()=>{ alvo[k] = el.value; salvar(); if(S.dor) render(); });
   });
-  if(S.pac.nome || S.pac.op) $('bloco_pac').open = true;
+  ligar(CAMPOS, S.pac);
+  ligar(CLIN, S.clin);
+}
+function espelharCampos(){
+  Object.entries(CAMPOS).forEach(([id,k])=>{ $(id).value = S.pac[k] || ''; });
+  Object.entries(CLIN).forEach(([id,k])=>{ $(id).value = S.clin[k] || ''; });
+}
+
+/* ---------- Tratamentos prévios ---------- */
+function renderTrat(){
+  const alvo = $('trat_corpo');
+  if(!S.tratPrevios.length){
+    alvo.innerHTML = '<p class="vazio">Nenhum tratamento registrado. A extração preenche esta tabela, ou acrescente à mão.</p>';
+    return;
+  }
+  alvo.innerHTML = S.tratPrevios.map((t,i)=>`
+    <div class="trat-item">
+      <div class="f2">
+        <label class="full">Medicamento<input data-tr="medicamento" data-i="${i}" value="${esc(t.medicamento||'')}"></label>
+        <label>Dose<input data-tr="dose" data-i="${i}" value="${esc(t.dose||'')}"></label>
+        <label>Período<input data-tr="periodo" data-i="${i}" value="${esc(t.periodo||'')}"></label>
+        <label class="full">Desfecho<input data-tr="desfecho" data-i="${i}" value="${esc(t.desfecho||'')}" placeholder="falha, intolerância, contraindicação…"></label>
+      </div>
+      <div class="actions"><button class="btn ghost mini" data-trrm="${i}">Remover</button></div>
+    </div>`).join('');
+
+  alvo.querySelectorAll('[data-tr]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      S.tratPrevios[+el.dataset.i][el.dataset.tr] = el.value;
+      salvar(); if(S.dor) render();
+    });
+  });
+  alvo.querySelectorAll('[data-trrm]').forEach(b=>{
+    b.onclick = ()=>{ S.tratPrevios.splice(+b.dataset.trrm,1); renderTrat(); salvar(); if(S.dor) render(); };
+  });
+}
+
+/* ---------- Extração por IA ---------- */
+const pendente = { carteirinha: null, historia: null };
+let zonaAtiva = 'historia';
+
+function setSt(alvo, msg, classe){
+  const el = $('st_' + alvo);
+  el.textContent = msg;
+  el.className = 'st' + (classe ? ' ' + classe : '');
+}
+
+/* Fotos de celular chegam com 4-8 MB. A Netlify Function tem limite de payload,
+   e a IA não lê melhor por ter mais pixels: reduz para no máximo 1600 px. */
+function reduzir(file){
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1600;
+      const escala = Math.min(1, MAX / Math.max(img.width, img.height));
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(img.width * escala);
+      cv.height = Math.round(img.height * escala);
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      URL.revokeObjectURL(url);
+      const dataUrl = cv.toDataURL('image/jpeg', 0.85);
+      resolve({ dataUrl, base64: dataUrl.split(',')[1], mediaType: 'image/jpeg' });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('arquivo não é uma imagem legível')); };
+    img.src = url;
+  });
+}
+
+async function anexar(file, alvo){
+  if(!file || !file.type.startsWith('image/')) return;
+  setSt(alvo, 'Preparando a imagem…', 'loading');
+  try {
+    const img = await reduzir(file);
+    pendente[alvo] = img;
+    const prev = $('prev_' + alvo);
+    prev.src = img.dataUrl;
+    prev.hidden = false;
+    $('acao_' + alvo).hidden = false;
+    setSt(alvo, 'Confira se a imagem está legível e toque em "Extrair com IA".', '');
+  } catch(e) {
+    setSt(alvo, 'Não consegui ler esse arquivo (' + e.message + ').', 'error');
+  }
+}
+
+function limpar(alvo){
+  pendente[alvo] = null;
+  const prev = $('prev_' + alvo);
+  prev.removeAttribute('src'); prev.hidden = true;
+  $('acao_' + alvo).hidden = true;
+  $('f_' + alvo).value = '';
+  setSt(alvo, '', '');
+}
+
+async function extrair(alvo, corpo){
+  setSt(alvo, 'Consultando a IA…', 'loading');
+  try {
+    const resp = await fetch('/.netlify/functions/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...corpo, tipo: alvo })
+    });
+    if(!resp.ok){
+      const txt = await resp.text();
+      throw new Error(`servidor respondeu ${resp.status}: ${txt.slice(0,200)}`);
+    }
+    const dados = await resp.json();
+    if(dados.error) throw new Error(dados.error);
+
+    const vazios = alvo === 'carteirinha' ? aplicarCarteirinha(dados) : aplicarHistoria(dados);
+    espelharCampos(); renderTrat(); salvar(); if(S.dor) render();
+
+    setSt(alvo, vazios.length
+      ? `✓ Preenchido. Não consegui ler: ${vazios.join(', ')} — complete à mão.`
+      : '✓ Preenchido — confira tudo antes de gerar a guia.', vazios.length ? '' : 'ok');
+  } catch(e) {
+    setSt(alvo, 'Não consegui extrair (' + e.message + '). Preencha à mão.', 'error');
+  }
+}
+
+/* Só grava o que veio preenchido: campo ilegível fica vazio e é avisado,
+   nunca chutado. */
+function aplicarCarteirinha(d){
+  const mapa = { nome:'nome', nascimento:'nasc', convenio:'op', carteirinha:'cart',
+                 plano:'plano', acomodacao:'acom', registroAns:'ans' };
+  const rotulos = { nome:'nome', nascimento:'nascimento', convenio:'operadora',
+                    carteirinha:'carteirinha', plano:'plano', acomodacao:'acomodação',
+                    registroAns:'registro ANS' };
+  const vazios = [];
+  Object.entries(mapa).forEach(([de,para])=>{
+    const v = (d[de] || '').trim();
+    if(v) S.pac[para] = v; else vazios.push(rotulos[de]);
+  });
+  return vazios;
+}
+
+function aplicarHistoria(d){
+  const mapa = { hda:'hda', exameNeurologico:'exame', examesComplementares:'examescompl',
+                 cid:'cid', diasCefaleiaMes:'dias', midas:'midas', hit6:'hit6' };
+  const rotulos = { hda:'história da doença atual', exameNeurologico:'exame neurológico',
+                    examesComplementares:'exames citados', cid:'CID',
+                    diasCefaleiaMes:'dias de cefaleia/mês', midas:'MIDAS', hit6:'HIT-6' };
+  const vazios = [];
+  Object.entries(mapa).forEach(([de,para])=>{
+    const v = String(d[de] ?? '').trim();
+    if(v) S.clin[para] = v; else vazios.push(rotulos[de]);
+  });
+
+  const lista = Array.isArray(d.tratamentosPrevios) ? d.tratamentosPrevios : [];
+  const limpos = lista
+    .filter(t => t && (t.medicamento||'').trim())
+    .map(t => ({
+      medicamento: (t.medicamento||'').trim(), dose: (t.dose||'').trim(),
+      periodo: (t.periodo||'').trim(), desfecho: (t.desfecho||'').trim()
+    }));
+  if(limpos.length) S.tratPrevios = limpos;
+  else vazios.push('tratamentos prévios');
+
+  return vazios;
+}
+
+function bindEtapa0(){
+  ['carteirinha','historia'].forEach(alvo=>{
+    const zona = $('z_' + alvo);
+    $('f_' + alvo).addEventListener('change', e => anexar(e.target.files[0], alvo));
+    zona.addEventListener('click', ()=>{ zonaAtiva = alvo; marcarZona(); });
+    zona.addEventListener('dragover', e=>{ e.preventDefault(); zona.classList.add('sobre'); });
+    zona.addEventListener('dragleave', ()=> zona.classList.remove('sobre'));
+    zona.addEventListener('drop', e=>{
+      e.preventDefault(); zona.classList.remove('sobre');
+      zonaAtiva = alvo; marcarZona();
+      anexar(e.dataTransfer.files[0], alvo);
+    });
+  });
+
+  document.querySelectorAll('[data-extrair]').forEach(b=>{
+    b.onclick = ()=>{
+      const alvo = b.dataset.extrair, img = pendente[alvo];
+      if(!img) return;
+      extrair(alvo, { image: img.base64, mediaType: img.mediaType });
+    };
+  });
+  document.querySelectorAll('[data-limpar]').forEach(b=>{
+    b.onclick = ()=> limpar(b.dataset.limpar);
+  });
+
+  $('btn_txt_historia').onclick = ()=>{
+    const texto = $('txt_historia').value.trim();
+    if(!texto) { setSt('historia', 'Cole o texto do prontuário antes de extrair.', 'error'); return; }
+    extrair('historia', { texto });
+  };
+
+  $('btn_trat_add').onclick = ()=>{
+    S.tratPrevios.push({medicamento:'', dose:'', periodo:'', desfecho:''});
+    renderTrat(); salvar();
+  };
+
+  // Ctrl+V em qualquer lugar da página cai na zona ativa.
+  document.addEventListener('paste', e=>{
+    const item = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith('image/'));
+    if(!item) return;                       // colagem de texto segue o caminho normal
+    if(document.activeElement && document.activeElement.tagName === 'TEXTAREA') return;
+    e.preventDefault();
+    anexar(item.getAsFile(), zonaAtiva);
+    $('z_' + zonaAtiva).scrollIntoView({block:'center'});
+  });
+
+  marcarZona();
+}
+function marcarZona(){
+  ['carteirinha','historia'].forEach(a=>
+    $('z_' + a).classList.toggle('ativa', a === zonaAtiva));
 }
 
 /* ---------- Início ---------- */
@@ -644,7 +1007,9 @@ async function iniciar(){
     return;
   }
   carregar();
-  bindPaciente();
+  bindCampos();
+  bindEtapa0();
+  renderTrat();
   $('foot').textContent = `Base v${KB.meta.versao} (${KB.meta.data}). ${KB.meta.aviso}`;
   render();
 }
