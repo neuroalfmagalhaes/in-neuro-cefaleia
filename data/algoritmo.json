@@ -1,0 +1,647 @@
+{
+  "meta": {
+    "versao": "1.1",
+    "data": "2026-09-10",
+    "medico": {
+      "nome": "Dr. Alfredo Magalhães",
+      "crm": "CREMESP 135506",
+      "rqe": "RQE 72972"
+    },
+    "aviso": "Itens marcados [confirmar] ou [PREENCHER] devem ser validados pelo médico antes do uso. Códigos conferidos em tabelas TUSS públicas; valores de remuneração variam por operadora."
+  },
+  "alarme": [
+    "Sintomas sistêmicos (febre, perda de peso)",
+    "História de neoplasia",
+    "Déficit neurológico ou alteração de consciência",
+    "Início súbito (cefaleia em trovoada)",
+    "Início após os 50 anos",
+    "Mudança de padrão ou cefaleia recente",
+    "Piora com a posição (ortostática/decúbito)",
+    "Desencadeada por tosse, esforço ou Valsalva",
+    "Papiledema",
+    "Evolução progressiva ou apresentação atípica",
+    "Gestação ou puerpério",
+    "Dor ocular com sinais autonômicos",
+    "Início pós-traumático",
+    "Imunossupressão",
+    "Uso excessivo de analgésicos ou medicação nova"
+  ],
+  "exames": {
+    "rm_cranio": {
+      "nome": "RM de crânio (encéfalo) com e sem contraste",
+      "tuss": "41101014"
+    },
+    "rm_sela": {
+      "nome": "RM de sela túrcica / hipófise",
+      "tuss": "41101022"
+    },
+    "rm_cervical": {
+      "nome": "RM de coluna cervical",
+      "tuss": "41101227"
+    },
+    "angio_rm": {
+      "nome": "Angio-RM arterial de crânio (3D TOF)",
+      "tuss": "41101324 [confirmar]"
+    },
+    "tc_cervical": {
+      "nome": "TC de coluna cervical (C1–C2)",
+      "tuss": "[PREENCHER]"
+    },
+    "tc_base": {
+      "nome": "TC de base de crânio (forame oval)",
+      "tuss": "[PREENCHER]"
+    }
+  },
+  "procedimentos": {
+    "bloqueio": {
+      "nome": "Bloqueio de nervos cranianos",
+      "codigos": [
+        {
+          "tuss": "31602045",
+          "desc": "Bloqueio anestésico de nervos cranianos",
+          "qtd": "por nervo/lado, conforme regra da operadora",
+          "ref": "CH 250 em tabela de referência"
+        }
+      ],
+      "materiais": [
+        "Agulha hipodérmica 25G ou 27G — 2 un.",
+        "Seringa 5 mL — 2 un.",
+        "Gaze estéril — 1 pct.",
+        "Clorexidina alcoólica 0,5%",
+        "Luvas estéreis — 1 par"
+      ],
+      "alerta_base": "A base atual da skill lista 'Ropivacaína 2% sem vaso' — essa apresentação não existe (ropivacaína: 0,2%, 0,75% ou 1%). Corrigir para evitar glosa de material."
+    },
+    "botox": {
+      "nome": "Toxina botulínica (PREEMPT)",
+      "codigos": [
+        {
+          "tuss": "20103140",
+          "desc": "Bloqueio fenólico, alcoólico ou com toxina botulínica (de pontos motores) — por membro ou segmento corporal",
+          "qtd": "por segmento (cabeça e pescoço) — confirmar regra da operadora",
+          "ref": "Rol com DUT restrita a distonias/espasticidade"
+        }
+      ],
+      "materiais": [
+        "Seringa 1 mL (tuberculina) — [PREENCHER quantidade]",
+        "Agulha 30G ½\" — [PREENCHER quantidade]",
+        "Gaze estéril",
+        "Álcool 70%",
+        "Luvas"
+      ],
+      "medicamentos": [
+        "Toxina onabotulínica A 100 U — 2 frascos (155–195 U)",
+        "Soro fisiológico 0,9% 10 mL — reconstituição (2 mL por frasco = 5 U/0,1 mL)"
+      ],
+      "alerta_base": "Unidades de toxinas de marcas diferentes não são intercambiáveis. Pedir onabotulínica A (a do PREEMPT) e não aceitar troca de marca sem conversão justificada."
+    },
+    "rf": {
+      "nome": "Radiofrequência",
+      "codigos": [],
+      "materiais": [
+        "Placa dispersiva (eletrodo neutro)",
+        "Agulha 25G e seringas 5/10 mL (anestesia local)",
+        "Kit campo estéril"
+      ],
+      "alerta_base": "Cânulas, eletrodos e gerador: confirmar modelos com o fornecedor habitual antes de gerar a guia."
+    }
+  },
+  "cefaleias": {
+    "enxaqueca": {
+      "nome": "Enxaqueca",
+      "assinatura": "Pulsátil, piora com esforço, náusea, foto e fonofobia",
+      "ichd": "ICHD-3 1.3 (crônica)",
+      "cid": "G43.x — confirmar se a operadora aceita G43.7",
+      "criterios": [
+        "≥15 dias de cefaleia por mês há mais de 3 meses",
+        "≥8 dias/mês com características de migrânea (ou resposta a triptano)",
+        "Diário de cefaleia de pelo menos 4 semanas",
+        "Uso excessivo de medicação sintomática avaliado"
+      ],
+      "exames": [
+        {
+          "id": "rm_cranio",
+          "quando": "Sinais de alarme, aura atípica ou antes do Botox (dossiê)",
+          "just": "Exclusão de cefaleia secundária antes de procedimento em paciente com enxaqueca crônica refratária."
+        }
+      ],
+      "proc": {
+        "bloqueio": {
+          "risco": "moderado",
+          "nota": "Ponte no uso excessivo de analgésicos e na crise refratária.",
+          "nervos": "Occipital maior bilateral ± supraorbital, supratroclear, auriculotemporal",
+          "medicamentos": [
+            "Lidocaína 2% sem vasoconstritor — 1 frasco",
+            "ou Ropivacaína 0,75% (7,5 mg/mL) — 1 ampola"
+          ],
+          "alerta": "Na enxaqueca o corticoide não acrescentou benefício ao anestésico isolado — preferir só anestésico.",
+          "check": [
+            "Diagnóstico ICHD-3 documentado",
+            "Indicação: ponte no uso excessivo de medicação ou crise refratária",
+            "Profiláticos atuais e prévios registrados",
+            "Nervos e lateralidade definidos",
+            "Se repetição: % de melhora e duração da sessão anterior"
+          ],
+          "racional": "O bloqueio anestésico do nervo occipital maior é recomendado como terapia de transição na enxaqueca crônica, especialmente no contexto de uso excessivo de medicação sintomática, com o objetivo de reduzir a frequência das crises e o consumo de analgésicos (Blumenfeld et al., 2013).",
+          "refs": [
+            "ichd3",
+            "blumenfeld"
+          ]
+        },
+        "botox": {
+          "risco": "alto",
+          "nota": "Fora da DUT. Só com dossiê completo — o critério da Conitec (falha de ≥3 profiláticos) é o que a auditoria vai cobrar.",
+          "check": [
+            "Idade ≥18 anos",
+            "Enxaqueca crônica ICHD-3 1.3 comprovada por diário",
+            "Falha, intolerância ou contraindicação a ≥3 profiláticos (classe, dose, tempo, desfecho)",
+            "Uso excessivo de medicação sintomática manejado",
+            "MIDAS e HIT-6 basais",
+            "RM de crânio sem causa secundária",
+            "Sem gestação, lactação ou doença da junção neuromuscular",
+            "Renovação: redução ≥30% dos dias de cefaleia após 2 ciclos (NICE)"
+          ],
+          "racional": "A toxina onabotulínica A no protocolo PREEMPT (155–195 U em 31–39 pontos, a cada 12 semanas) reduziu de forma significativa os dias de cefaleia em ensaios randomizados de fase III (Aurora et al., 2010; Diener et al., 2010; Dodick et al., 2010) e é recomendada pelo NICE (TA260) na enxaqueca crônica após falha de três profiláticos — mesmo critério da proposta em avaliação pela Conitec (Consulta Pública nº 70/2026).",
+          "refs": [
+            "ichd3",
+            "preempt1",
+            "preempt2",
+            "preemptpool",
+            "nice260",
+            "conitec70"
+          ],
+          "alvo": "Protocolo PREEMPT: 155 U em 31 pontos fixos, 7 grupos musculares de cabeça e pescoço (até 195 U em 39 pontos, follow-the-pain), a cada 12 semanas"
+        },
+        "rf": {
+          "risco": "nao",
+          "nota": "Sem indicação de radiofrequência na enxaqueca."
+        }
+      }
+    },
+    "tensional": {
+      "nome": "Tipo tensional",
+      "assinatura": "Em aperto ou pressão, bilateral, sem náusea, não piora com esforço",
+      "ichd": "ICHD-3 2.3 (crônica)",
+      "cid": "G44.2",
+      "criterios": [
+        "Frequência documentada (crônica: ≥15 dias/mês há >3 meses)",
+        "Dor em pressão ou aperto, bilateral, leve a moderada",
+        "Sem náusea/vômitos e no máximo foto OU fonofobia",
+        "Ausência de características migranosas"
+      ],
+      "exames": [
+        {
+          "id": "rm_cranio",
+          "quando": "Apenas com sinal de alarme",
+          "just": "Sinal de alarme presente — exclusão de cefaleia secundária."
+        }
+      ],
+      "proc": {
+        "bloqueio": {
+          "risco": "moderado-alto",
+          "nota": "Evidência fraca. Só com justificativa individual forte.",
+          "nervos": "Occipital maior bilateral",
+          "medicamentos": [
+            "Lidocaína 2% sem vasoconstritor — 1 frasco"
+          ],
+          "check": [
+            "Cefaleia tipo tensional crônica documentada",
+            "Falha de profilaxia (ex.: amitriptilina) com dose e tempo",
+            "Dor à palpação pericraniana/cervical registrada",
+            "Justificativa individual da indicação"
+          ],
+          "racional": "Indicação individualizada como terapia adjuvante na cefaleia do tipo tensional crônica refratária à profilaxia, com dor à palpação da musculatura pericraniana e cervical.",
+          "refs": [
+            "ichd3",
+            "blumenfeld"
+          ]
+        },
+        "botox": {
+          "risco": "nao",
+          "nota": "Não solicitar: ensaios controlados negativos e a diretriz EFNS não recomenda. Glosa difícil de reverter."
+        },
+        "rf": {
+          "risco": "nao",
+          "nota": "Sem indicação de radiofrequência na cefaleia tensional."
+        }
+      }
+    },
+    "arnold": {
+      "nome": "Neuralgia occipital (Arnold)",
+      "assinatura": "Choques ou pontadas na nuca e couro cabeludo posterior, dor à palpação do nervo",
+      "ichd": "ICHD-3 13.4",
+      "cid": "[PREENCHER — sem código específico na CID-10; definir padrão]",
+      "criterios": [
+        "Dor paroxística no território do occipital maior, menor e/ou terceiro occipital",
+        "Disestesia ou alodinia no couro cabeludo",
+        "Dor à palpação ou sinal de Tinel sobre o nervo",
+        "Alívio temporário com bloqueio anestésico do nervo acometido"
+      ],
+      "exames": [
+        {
+          "id": "rm_cervical",
+          "quando": "Sempre antes de radiofrequência; déficit ou dor atípica",
+          "just": "Exclusão de compressão estrutural na junção craniocervical (C1–C2) antes de procedimento intervencionista."
+        },
+        {
+          "id": "rm_cranio",
+          "quando": "Avaliar fossa posterior (malformação de Chiari)",
+          "just": "Exclusão de lesão de fossa posterior e malformação de Chiari como causa secundária."
+        },
+        {
+          "id": "tc_cervical",
+          "quando": "Suspeita de patologia óssea ou contraindicação à RM",
+          "just": "Avaliação óssea/degenerativa de C1–C2."
+        }
+      ],
+      "proc": {
+        "bloqueio": {
+          "risco": "baixo",
+          "nota": "Diagnóstico e terapêutico — o alívio com o bloqueio faz parte do critério da ICHD-3.",
+          "nervos": "Occipital maior ± menor, no(s) lado(s) acometido(s)",
+          "medicamentos": [
+            "Lidocaína 2% sem vasoconstritor — 1 frasco",
+            "Dexametasona 10 mg (Decadron) — 1 ampola [padrão atual da base]"
+          ],
+          "check": [
+            "Neuralgia occipital documentada (ICHD-3 13.4)",
+            "Finalidade diagnóstica e terapêutica registrada",
+            "Nervo(s) e lado(s) definidos",
+            "Registrar % de alívio e duração (habilita a radiofrequência)"
+          ],
+          "racional": "Na neuralgia occipital o bloqueio anestésico tem finalidade diagnóstica e terapêutica: o alívio temporário após o bloqueio do nervo acometido integra os critérios diagnósticos da ICHD-3 (13.4).",
+          "refs": [
+            "ichd3",
+            "blumenfeld"
+          ]
+        },
+        "botox": {
+          "risco": "nao",
+          "nota": "Sem indicação consolidada de toxina na neuralgia occipital."
+        },
+        "rf": {
+          "risco": "baixo",
+          "modalidade": "Pulsada",
+          "alvo": "Nervo occipital maior e/ou menor (uni ou bilateral)",
+          "nota": "Liberada após bloqueio teste positivo com retorno da dor. Coberta pela DUT 62 (item 3) se refratária a ≥3 meses de tratamento clínico contínuo.",
+          "codigos": [
+            {
+              "tuss": "31403336",
+              "desc": "Rizotomia percutânea por segmento — qualquer método",
+              "qtd": "por segmento/lado",
+              "ref": "DUT 62, item 3"
+            },
+            {
+              "tuss": "40811026",
+              "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)",
+              "qtd": "por hora ou fração",
+              "ref": "se guiada por radioscopia"
+            }
+          ],
+          "materiais_extra": [
+            "Cânula de RF 22G, 5–10 cm, ponta ativa 5 mm — 1 por lado [confirmar]",
+            "Eletrodo/sonda de RF compatível com o gerador"
+          ],
+          "medicamentos": [
+            "Lidocaína 2% sem vasoconstritor — 1 frasco (pele e teste)"
+          ],
+          "alerta": "Pulsada não é ablativa: descreva a técnica na guia. Alguns auditores questionam o termo 'rizotomia' — confirme o enquadramento com a operadora.",
+          "check": [
+            "Neuralgia occipital ICHD-3 13.4 documentada",
+            "Tratamento clínico contínuo ≥3 meses com falha ou intolerância (DUT 62)",
+            "Bloqueio teste positivo do mesmo alvo, com retorno da dor (etapa anterior)",
+            "RM de coluna cervical e crânio sem causa estrutural",
+            "Nervo(s), lado(s) e técnica pulsada descritos",
+            "Radioscopia/ultrassom e materiais discriminados na guia"
+          ],
+          "racional": "O paciente preenche a DUT 62 (item 3) do Rol da ANS: neuralgia occipital refratária a tratamento clínico contínuo por pelo menos 3 meses, com bloqueio diagnóstico positivo. A radiofrequência pulsada do nervo occipital, técnica não destrutiva, foi superior à injeção de corticoide em ensaio randomizado (Cohen et al., 2015) e manteve alívio em seguimento prospectivo (Vanelderen et al., 2010).",
+          "refs": [
+            "ichd3",
+            "dut62",
+            "cohen2015",
+            "vanelderen",
+            "prf_rs2024"
+          ]
+        }
+      }
+    },
+    "salvas": {
+      "nome": "Cefaleia em salvas",
+      "assinatura": "Unilateral orbitária, 15–180 min, lacrimejamento, rinorreia, inquietação",
+      "ichd": "ICHD-3 3.1 (3.1.2 crônica)",
+      "cid": "G44.0",
+      "criterios": [
+        "Dor unilateral orbitária, supraorbitária e/ou temporal, intensa, de 15–180 min",
+        "Sinais autonômicos ipsilaterais e/ou inquietação",
+        "Frequência de 1 crise a cada 2 dias até 8/dia",
+        "Crônica: sem remissão ≥3 meses por pelo menos 1 ano"
+      ],
+      "exames": [
+        {
+          "id": "rm_cranio",
+          "quando": "Todos os casos",
+          "just": "Exclusão de cefaleia trigêmino-autonômica sintomática (lesões selares, parasselares e de seio cavernoso)."
+        },
+        {
+          "id": "rm_sela",
+          "quando": "Se o serviço fizer protocolo dedicado de hipófise",
+          "just": "Lesões hipofisárias podem mimetizar cefaleia em salvas."
+        }
+      ],
+      "proc": {
+        "bloqueio": {
+          "risco": "baixo",
+          "nota": "Occipital maior ipsilateral com corticoide — ensaios randomizados positivos.",
+          "nervos": "Occipital maior ipsilateral à dor",
+          "medicamentos": [
+            "Lidocaína 2% sem vasoconstritor — 1 frasco",
+            "Corticoide de depósito (ex.: metilprednisolona 40 mg/mL ou betametasona) — 1 ampola",
+            "ou Dexametasona 10 mg (Decadron) — padrão atual da base"
+          ],
+          "alerta": "Na salvas o corticoide é o componente com evidência — não omitir.",
+          "check": [
+            "Cefaleia em salvas ICHD-3 3.1 documentada",
+            "Momento: início do período de salvas ou transição de profilaxia",
+            "Lado da dor definido",
+            "Profilaxia de base em curso ou planejada"
+          ],
+          "racional": "Na cefaleia em salvas, a injeção suboccipital de corticoide associada a anestésico no território do nervo occipital maior ipsilateral reduz a frequência das crises como tratamento de transição, com eficácia demonstrada em ensaios randomizados controlados (Ambrosini et al., 2005; Leroux et al., 2011).",
+          "refs": [
+            "ichd3",
+            "ambrosini",
+            "leroux"
+          ]
+        },
+        "botox": {
+          "risco": "nao",
+          "nota": "Sem indicação consolidada de toxina na cefaleia em salvas."
+        },
+        "rf": {
+          "risco": "alto",
+          "modalidade": "Pulsada",
+          "alvo": "Mesmo alvo do bloqueio teste positivo: occipital maior ipsilateral ou gânglio esfenopalatino",
+          "nota": "Liberada após bloqueio teste positivo com retorno da dor. Fora da DUT 62 — evidência de séries de casos.",
+          "codigos": [
+            {
+              "tuss": "31403336",
+              "desc": "Rizotomia percutânea por segmento — qualquer método",
+              "qtd": "1 (alvo ipsilateral)",
+              "ref": "radiofrequência pulsada — confirmar enquadramento; fora da DUT 62"
+            },
+            {
+              "tuss": "40811026",
+              "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)",
+              "qtd": "por hora ou fração",
+              "ref": "obrigatória no acesso ao gânglio esfenopalatino"
+            }
+          ],
+          "materiais_extra": [
+            "Cânula de RF curva 20–22G, 10 cm, ponta ativa 5 mm [confirmar]",
+            "Eletrodo/sonda de RF compatível com o gerador"
+          ],
+          "medicamentos": [
+            "Lidocaína 2% sem vasoconstritor — 1 frasco"
+          ],
+          "alerta": "Pedido fora do Rol: exige o checklist dos 5 requisitos da ADI 7265. Se optar por lesão térmica do gânglio esfenopalatino, o código passa a ser 31602134 (bloqueio neurolítico) — confirmar enquadramento.",
+          "check": [
+            "Salvas crônica (ICHD-3 3.1.2) refratária",
+            "Falha de profiláticos (verapamil, lítio etc.) com dose e tempo",
+            "Bloqueio teste positivo do mesmo alvo, com retorno da dor (etapa anterior)",
+            "RM de crânio/sela sem lesão",
+            "Checklist ADI 7265 preenchido (etapa de contestação)"
+          ],
+          "racional": "Cefaleia em salvas crônica refratária aos profiláticos disponíveis. A radiofrequência pulsada do gânglio esfenopalatino guiada por imagem apresentou alívio sustentado em seguimento de 12 a 30 meses (Fang et al., 2016), e a do nervo occipital é aplicada em protocolos padronizados após bloqueio diagnóstico positivo, com evidência ainda de baixa qualidade (revisão sistemática, 2024). A lesão térmica do gânglio é alternativa descrita em séries de casos (Sanders & Zuurmond, 1997; Narouze et al., 2009).",
+          "refs": [
+            "ichd3",
+            "fang2016",
+            "prf_rs2024",
+            "sanders",
+            "narouze"
+          ]
+        }
+      }
+    },
+    "trigemeo": {
+      "nome": "Neuralgia do trigêmeo",
+      "assinatura": "Choques de segundos na face, com gatilho ao falar, mastigar ou tocar",
+      "ichd": "ICHD-3 13.1",
+      "cid": "G50.0",
+      "criterios": [
+        "Paroxismos de dor de <1 s a 2 min em um ou mais ramos do trigêmeo",
+        "Dor intensa em choque, pontada ou facada",
+        "Desencadeada por estímulos inócuos no território acometido",
+        "Classificada: clássica (compressão neurovascular), idiopática ou secundária"
+      ],
+      "exames": [
+        {
+          "id": "rm_cranio",
+          "quando": "Todos os casos — com T2 de alta resolução (FIESTA/CISS) e contraste",
+          "just": "Pesquisa de compressão neurovascular e exclusão de tumor de ângulo pontocerebelar e esclerose múltipla."
+        },
+        {
+          "id": "angio_rm",
+          "quando": "Junto com a RM — planejamento terapêutico",
+          "just": "Caracterização do vaso responsável pela compressão neurovascular."
+        },
+        {
+          "id": "tc_base",
+          "quando": "Opcional — anatomia difícil do forame oval",
+          "just": "Planejamento do acesso percutâneo ao gânglio de Gasser."
+        }
+      ],
+      "proc": {
+        "bloqueio": {
+          "risco": "moderado",
+          "nota": "Ponte até ajuste medicamentoso ou procedimento definitivo.",
+          "nervos": "Supraorbital, infraorbital e/ou mentoniano, conforme o ramo",
+          "medicamentos": [
+            "Lidocaína 2% sem vasoconstritor — 1 frasco",
+            "ou Ropivacaína 0,75% — 1 ampola"
+          ],
+          "check": [
+            "Neuralgia do trigêmeo documentada",
+            "Finalidade: ponte terapêutica",
+            "Ramo(s) acometido(s) definido(s)"
+          ],
+          "racional": "Bloqueio de ramos periféricos do trigêmeo como terapia de transição para controle da dor paroxística até o ajuste medicamentoso ou a realização de procedimento definitivo.",
+          "refs": [
+            "ichd3",
+            "ean_nt"
+          ]
+        },
+        "botox": {
+          "risco": "alto",
+          "nota": "Off-label e fora do Rol. Reservar para contraindicação a procedimento percutâneo ou cirúrgico.",
+          "check": [
+            "Refratária a carbamazepina/oxcarbazepina e ≥1 alternativa",
+            "Contraindicação a procedimento percutâneo ou cirúrgico documentada",
+            "Checklist ADI 7265 preenchido"
+          ],
+          "racional": "Uso off-label, reservado a paciente refratário com contraindicação documentada a procedimentos percutâneos ou cirúrgicos.",
+          "refs": [
+            "ean_nt"
+          ],
+          "alvo": "Pontos no território do(s) ramo(s) acometido(s) — dose [PREENCHER]"
+        },
+        "rf": {
+          "risco": "baixo",
+          "modalidade": "Térmica",
+          "alvo": "Gânglio de Gasser via forame oval, sob radioscopia e sedação",
+          "nota": "Coberta pela DUT 62 (item 3). Alternativas no mesmo raciocínio: compressão por balão e descompressão microvascular.",
+          "codigos": [
+            {
+              "tuss": "31404030",
+              "desc": "Tratamento de nevralgia do trigêmio por técnica cirúrgica percutânea — qualquer método",
+              "qtd": "1",
+              "ref": "código mais específico; a descrição manda cobrar a imagem à parte"
+            },
+            {
+              "tuss": "40811026",
+              "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)",
+              "qtd": "por hora ou fração",
+              "ref": "obrigatória"
+            }
+          ],
+          "materiais_extra": [
+            "Cânula de RF 20–22G, 10 cm, ponta ativa 2–5 mm (tipo Tew/Sluijter) [confirmar]",
+            "Eletrodo termopar compatível com o gerador"
+          ],
+          "medicamentos": [
+            "Lidocaína 2% sem vasoconstritor — 1 frasco (pele)",
+            "Sedação a cargo da anestesiologia (solicitar à parte)"
+          ],
+          "alerta": "Use 31404030 (específico), não 31403336 (genérico). Solicite também a rotina pré-operatória para sedação.",
+          "check": [
+            "Neuralgia do trigêmeo ICHD-3 13.1 documentada",
+            "Carbamazepina/oxcarbazepina ≥3 meses com falha ou intolerância (DUT 62)",
+            "RM com FIESTA/CISS e angio-RM avaliadas",
+            "Ramo(s) acometido(s) definido(s)",
+            "Alternativas discutidas: descompressão microvascular e compressão por balão",
+            "Pré-operatório para sedação solicitado"
+          ],
+          "racional": "O paciente preenche a DUT 62 (item 3) do Rol da ANS: neuralgia do trigêmeo refratária ou intolerante a tratamento clínico contínuo por pelo menos 3 meses. A rizotomia percutânea por radiofrequência térmica do gânglio de Gasser é técnica consolidada, com alto índice de alívio e seguimento de longo prazo (Kanpolat et al., 2001), e figura entre as opções cirúrgicas da diretriz da EAN (Bendtsen et al., 2019); a radiofrequência térmica foi superior à pulsada em ensaio randomizado (Erdine et al., 2007).",
+          "refs": [
+            "ichd3",
+            "dut62",
+            "kanpolat",
+            "ean_nt",
+            "erdine"
+          ]
+        }
+      }
+    }
+  },
+  "referencias": {
+    "ichd3": "Headache Classification Committee of the International Headache Society. The International Classification of Headache Disorders, 3rd edition. Cephalalgia 2018;38(1):1–211.",
+    "blumenfeld": "Blumenfeld A et al. Expert consensus recommendations for the performance of peripheral nerve blocks for headaches. Headache 2013;53(3):437–446.",
+    "preempt1": "Aurora SK et al. OnabotulinumtoxinA for treatment of chronic migraine: PREEMPT 1. Cephalalgia 2010;30(7):793–803.",
+    "preempt2": "Diener HC et al. OnabotulinumtoxinA for treatment of chronic migraine: PREEMPT 2. Cephalalgia 2010;30(7):804–814.",
+    "preemptpool": "Dodick DW et al. OnabotulinumtoxinA for treatment of chronic migraine: pooled PREEMPT results. Headache 2010;50(6):921–936.",
+    "nice260": "NICE. Technology appraisal guidance TA260: Botulinum toxin type A for the prevention of headaches in adults with chronic migraine. 2012.",
+    "conitec70": "Conitec/MS. Consulta Pública nº 70/2026 — toxina botulínica A no tratamento profilático da migrânea crônica após falha de ≥3 profiláticos.",
+    "ambrosini": "Ambrosini A et al. Suboccipital injection with a mixture of rapid- and long-acting steroids in cluster headache: a double-blind placebo-controlled study. Pain 2005;118(1–2):92–96.",
+    "leroux": "Leroux E et al. Suboccipital steroid injections for transitional treatment of patients with more than two cluster headache attacks per day. Lancet Neurol 2011;10(10):891–897.",
+    "cohen2015": "Cohen SP et al. Pulsed radiofrequency versus steroid injections for occipital neuralgia or migraine with occipital nerve tenderness. Pain 2015;156(12):2585–2594. Critério de inclusão: bloqueio anestésico diagnóstico com ≥50% de alívio por ≥90 min (lidocaína) ou ≥3 h (bupivacaína/ropivacaína) — NCT01670825.",
+    "vanelderen": "Vanelderen P et al. Pulsed radiofrequency for the treatment of occipital neuralgia: a prospective study with 6 months of follow-up. Reg Anesth Pain Med 2010;35(2):148–151.",
+    "sanders": "Sanders M, Zuurmond WW. Efficacy of sphenopalatine ganglion blockade in 66 patients suffering from cluster headache. J Neurosurg 1997;87(6):876–880.",
+    "narouze": "Narouze S et al. Sphenopalatine ganglion radiofrequency ablation for the management of chronic cluster headache. Headache 2009;49(4):571–577.",
+    "kanpolat": "Kanpolat Y et al. Percutaneous controlled radiofrequency trigeminal rhizotomy for the treatment of idiopathic trigeminal neuralgia: 25-year experience with 1,600 patients. Neurosurgery 2001;48(3):524–534.",
+    "ean_nt": "Bendtsen L et al. European Academy of Neurology guideline on trigeminal neuralgia. Eur J Neurol 2019;26(6):831–849.",
+    "erdine": "Erdine S et al. Comparison of pulsed radiofrequency with conventional radiofrequency in the treatment of idiopathic trigeminal neuralgia. Eur J Pain 2007;11(3):309–313.",
+    "dut62": "ANS. Rol de Procedimentos e Eventos em Saúde — DUT 62: Rizotomia percutânea com ou sem radiofrequência, item 3 (nevralgias do trigêmeo, glossofaríngeo, occipital ou intermédio refratárias a tratamento clínico contínuo por ≥3 meses).",
+    "fang2016": "Fang L et al. Computerized tomography-guided sphenopalatine ganglion pulsed radiofrequency treatment in 16 patients with refractory cluster headaches: twelve- to 30-month follow-up evaluations. Cephalalgia 2016;36(2):106–112.",
+    "prf_rs2024": "Pulsed radiofrequency neuromodulation of the greater occipital nerve for the treatment of headache disorders in adults: a systematic review. Can J Pain 2024."
+  },
+  "glosas": {
+    "fora_rol": {
+      "nome": "Fora do Rol / fora da DUT",
+      "ouvidoria": "A negativa fundamenta-se na ausência de previsão no Rol/DUT. Nos termos do art. 10, §13, da Lei 9.656/1998 (redação da Lei 14.454/2022) e dos critérios fixados pelo STF na ADI 7265, a cobertura é devida quando cumpridos cumulativamente: (i) prescrição do médico assistente — anexa; (ii) inexistência de negativa expressa da ANS ou de análise pendente; (iii) ausência de alternativa terapêutica adequada no Rol para este paciente, que já apresentou falha às opções disponíveis (tabela anexa); (iv) eficácia e segurança demonstradas por evidência de alto nível — {refs}; (v) registro na Anvisa.",
+      "interno": "Para o Botox na enxaqueca, a ANS recomendou em 2020 não incluir a migrânea crônica na DUT — é o ponto fraco do requisito (ii). Argumente com evidência posterior e com a avaliação atual da Conitec, sem omitir o fato.",
+      "nip": "a operadora alegou que o procedimento não está no Rol da ANS, mas meu caso cumpre os requisitos da lei e do STF para cobertura fora do Rol, e já tentei sem sucesso os tratamentos disponíveis"
+    },
+    "dut62": {
+      "nome": "Não preenche a DUT 62",
+      "ouvidoria": "O paciente preenche integralmente o item 3 da DUT 62: diagnóstico de {dx}, refratário ou intolerante a tratamento clínico contínuo por pelo menos 3 meses (tabela de tratamentos anexa). Solicita-se a indicação objetiva de qual requisito da DUT não estaria atendido, conforme o dever de fundamentação da RN 623/2024.",
+      "nip": "a operadora alegou que não cumpro a diretriz de utilização, mas cumpro todos os requisitos: tenho o diagnóstico e fiz mais de 3 meses de tratamento com remédios, sem melhora"
+    },
+    "falha": {
+      "nome": "Falha terapêutica não comprovada",
+      "ouvidoria": "Segue tabela de tratamentos prévios com medicamento, dose, período de uso e desfecho (falha, intolerância ou contraindicação), extraída do prontuário, demonstrando o esgotamento das alternativas antes da indicação atual.",
+      "nip": "a operadora disse que não comprovei os tratamentos anteriores, mas meu médico enviou a lista completa com doses e períodos"
+    },
+    "estetico": {
+      "nome": "Procedimento estético",
+      "ouvidoria": "Trata-se de procedimento terapêutico para doença neurológica ({dx}, CID {cid}), em protocolo com pontos e doses definidos por ensaios clínicos, sem qualquer finalidade estética.",
+      "nip": "a operadora tratou como procedimento estético, mas é tratamento de uma doença neurológica"
+    },
+    "quantidade": {
+      "nome": "Quantidade de unidades, frascos ou nervos",
+      "ouvidoria": "A quantidade solicitada decorre do protocolo validado e da anatomia acometida (número de nervos, lados ou segmentos). Para toxina botulínica, o protocolo PREEMPT utiliza 155–195 U, o que exige 2 frascos de 100 U; unidades de toxinas diferentes não são intercambiáveis.",
+      "nip": "a operadora liberou quantidade menor do que a necessária para o protocolo indicado pelo meu médico"
+    },
+    "divergencia": {
+      "nome": "Divergência do auditor",
+      "ouvidoria": "Havendo divergência técnico-assistencial entre o médico auditor e o médico assistente, requer-se a instauração de junta médica nos termos da RN ANS 424/2017, com a indicação do profissional desempatador.",
+      "nip": "o médico da operadora discordou do meu médico sem realizar a junta médica prevista nas regras da ANS"
+    },
+    "material": {
+      "nome": "Radioscopia, material ou sedação negados",
+      "ouvidoria": "Os itens negados (radioscopia, cânula/eletrodo e/ou sedação) são indispensáveis à execução segura do procedimento autorizado. Autorizar o ato e negar os meios necessários equivale, na prática, à negativa do próprio procedimento.",
+      "nip": "a operadora autorizou o procedimento mas negou os materiais e equipamentos sem os quais ele não pode ser feito"
+    },
+    "exame": {
+      "nome": "Exame de imagem negado",
+      "ouvidoria": "O exame foi indicado para exclusão de causa secundária antes de procedimento intervencionista e/ou diante de sinal de alarme, conforme justificativa clínica anexa e diretrizes citadas ({refs}).",
+      "nip": "a operadora negou o exame que meu médico pediu para excluir outras causas antes do procedimento"
+    },
+    "prazo": {
+      "nome": "Sem resposta no prazo",
+      "ouvidoria": "Transcorrido o prazo máximo de atendimento previsto na RN ANS 566/2022 sem resposta conclusiva, requer-se a autorização imediata e a comunicação por escrito, nos termos da RN 623/2024.",
+      "nip": "a operadora não respondeu ao pedido dentro do prazo da ANS"
+    }
+  },
+  "bloqueio_teste": {
+    "aplica": [
+      "arnold",
+      "salvas"
+    ],
+    "criterio_positivo": "Alívio ≥50% da dor durante a ação do anestésico: ≥90 min com lidocaína ou ≥3 h com bupivacaína/ropivacaína (critério de inclusão do ensaio de Cohen et al.).",
+    "anestesicos": {
+      "lidocaina": {
+        "nome": "Lidocaína 2% sem vasoconstritor",
+        "janela": "90 min"
+      },
+      "ropivacaina": {
+        "nome": "Ropivacaína 0,75% (7,5 mg/mL)",
+        "janela": "3 h"
+      },
+      "bupivacaina": {
+        "nome": "Bupivacaína 0,5% sem vasoconstritor",
+        "janela": "3 h"
+      }
+    },
+    "observacao_min_sem": 4,
+    "observacao_max_sem": 12,
+    "nota_literatura": "A positividade do teste está definida na literatura (≥50% de alívio na janela do anestésico). O período de observação de 4 a 12 semanas é parâmetro do protocolo IN NEURO: não há prazo fixo em diretriz — a radiofrequência pulsada é considerada quando o alívio do bloqueio não se sustenta. Na neuralgia occipital, esse período com medicação conta para os 3 meses de tratamento clínico exigidos pela DUT 62.",
+    "alvos": {
+      "arnold": [
+        "Occipital maior",
+        "Occipital menor",
+        "Occipital maior + menor"
+      ],
+      "salvas": [
+        "Occipital maior ipsilateral",
+        "Gânglio esfenopalatino ipsilateral"
+      ]
+    },
+    "registro": [
+      "Data, alvo e lado",
+      "Fármaco e volume",
+      "Dor (0–10) antes do bloqueio",
+      "Dor em 30 min, 1 h, 3 h e 24 h",
+      "Dias de alívio",
+      "Data do retorno da dor",
+      "Medicação durante a observação"
+    ]
+  }
+}

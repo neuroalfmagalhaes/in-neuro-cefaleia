@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IN NEURO · Algoritmo de Cefaleia</title>
+<style>
+:root{
+  --teal:#1a5c52; --deep:#0e3a33; --gold:#b8926a; --gold-soft:#f3ece3;
+  --paper:#f5f7f6; --card:#ffffff; --line:#d5ddda; --ink:#1d2624; --muted:#5d6b68;
+  --baixo:#2f7d4f; --moderado:#a67a0a; --moderado-alto:#c2611a; --alto:#b03a2e; --nao:#7a8683;
+  --serif: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans: system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 var(--sans)}
+header{background:var(--deep);color:#fff;padding:20px 18px 18px;border-bottom:3px solid var(--gold)}
+header .wrap{max-width:760px;margin:0 auto}
+.brand{font:600 13px/1 var(--sans);letter-spacing:.08em;color:var(--gold)}
+header h1{font:500 26px/1.15 var(--serif);margin:8px 0 4px}
+header p{margin:0;color:#c9d8d4;font-size:14px}
+main{max-width:760px;margin:0 auto;padding:18px 14px 80px}
+details.pac{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:18px}
+details.pac summary{cursor:pointer;font-weight:600;color:var(--teal)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.grid label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.grid input{font:15px var(--sans);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+@media (max-width:520px){.grid{grid-template-columns:1fr}}
+
+/* A via: linha vertical que acende conforme as etapas são concluídas */
+.via{position:relative;padding-left:34px}
+.via::before{content:"";position:absolute;left:12px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.step{position:relative;margin-bottom:26px}
+.step .dot{position:absolute;left:-34px;top:0;width:26px;height:26px;border-radius:50%;background:var(--paper);border:2px solid var(--line);color:var(--muted);font:600 13px/22px var(--sans);text-align:center}
+.step.done .dot{background:var(--teal);border-color:var(--teal);color:#fff}
+.step.done::before{content:"";position:absolute;left:-23px;top:26px;bottom:-26px;width:2px;background:var(--teal)}
+.step h2{font:500 21px/1.25 var(--serif);margin:0 0 4px;color:var(--deep)}
+.step .sub{color:var(--muted);font-size:14px;margin:0 0 12px}
+.step.locked{opacity:.38;pointer-events:none}
+
+/* Etapa 1 — a escolha da dor */
+.dores{display:flex;flex-direction:column;gap:8px}
+.dor{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;font:inherit;color:inherit}
+.dor b{display:block;font:500 18px/1.3 var(--serif);color:var(--deep)}
+.dor span{font-size:14px;color:var(--muted)}
+.dor[aria-pressed="true"]{border-color:var(--teal);box-shadow:inset 4px 0 0 var(--teal);background:#eef4f2}
+.dor:focus-visible,.proc:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin-bottom:10px}
+.box h3{font:600 14px/1.3 var(--sans);margin:0 0 8px;color:var(--teal)}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:6px 0;font-size:15px;cursor:pointer}
+.chk input{margin-top:4px;width:18px;height:18px;accent-color:var(--teal);flex:none}
+.meta{font-size:13px;color:var(--muted)}
+.tuss{font-variant-numeric:tabular-nums;font-weight:700;color:var(--deep);background:var(--gold-soft);border:1px solid #e3d3bf;border-radius:6px;padding:1px 7px;white-space:nowrap}
+.exame{border-top:1px solid var(--line);padding:10px 0}
+.exame:first-of-type{border-top:0;padding-top:0}
+.exame .t{font-weight:600}
+.flag{background:#fbeeee;border:1px solid #efc9c5;color:#7d2a22;border-radius:8px;padding:8px 12px;font-size:14px;margin:8px 0}
+.note{background:#fff8e8;border:1px solid #eedcae;color:#6a4f09;border-radius:8px;padding:8px 12px;font-size:14px;margin:8px 0}
+
+/* Procedimentos com semáforo */
+.procs{display:flex;flex-direction:column;gap:8px}
+.proc{display:flex;gap:12px;align-items:flex-start;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;font:inherit;color:inherit}
+.proc[aria-pressed="true"]{border-color:var(--teal);box-shadow:inset 4px 0 0 var(--teal)}
+.proc[disabled]{cursor:not-allowed;background:#f1f3f2}
+.proc .lamp{flex:none;width:14px;height:14px;border-radius:50%;margin-top:5px}
+.proc b{display:block;font-size:16px}
+.proc .risk{font-size:13px;font-weight:600}
+.proc .n{font-size:14px;color:var(--muted)}
+
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden;margin:8px 0 4px}
+.bar i{display:block;height:100%;background:var(--teal);transition:width .25s}
+.ready{font-size:14px;font-weight:600}
+
+.cod{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;padding:8px 0;border-top:1px solid var(--line)}
+.cod:first-of-type{border-top:0}
+.cod .d{font-size:14px}
+.cod .q{grid-column:2;font-size:13px;color:var(--muted)}
+ul.l{margin:0;padding-left:18px}
+ul.l li{margin:3px 0;font-size:15px}
+.legit li::marker{color:var(--baixo)}
+.legit li.no::marker{color:var(--alto)}
+
+pre.out{white-space:pre-wrap;word-wrap:break-word;background:#fff;border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:8px;padding:12px 14px;font:14px/1.55 var(--serif);margin:0}
+.actions{display:flex;gap:8px;margin:8px 0 14px;flex-wrap:wrap}
+button.btn{font:600 14px var(--sans);border-radius:8px;border:1px solid var(--teal);background:var(--teal);color:#fff;padding:9px 14px;cursor:pointer}
+button.btn.ghost{background:#fff;color:var(--teal)}
+select{font:15px var(--sans);padding:9px 10px;border:1px solid var(--line);border-radius:8px;width:100%;background:#fff;color:var(--ink)}
+.verd{border-radius:10px;padding:12px 14px;margin:10px 0;font-size:15px;border:1px solid var(--line);background:#fff}
+.verd b{display:block;font:500 17px/1.3 var(--serif);margin-bottom:2px}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f2 label.full{grid-column:1/-1}
+.f2 label{font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
+.f2 input,.f2 select{font:15px var(--sans);padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);width:100%}
+.timeline{display:flex;gap:4px;margin:10px 0 2px}
+.timeline span{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.timeline span.on{background:var(--teal)}
+.tl-lab{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--deep);color:#fff;padding:9px 16px;border-radius:20px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.on{opacity:1}
+footer{max-width:760px;margin:0 auto;padding:0 14px 30px;color:var(--muted);font-size:12px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand">IN NEURO</div>
+  <h1>Algoritmo de cefaleia: da dor à guia autorizada</h1>
+  <p>Diagnóstico, exames, procedimento, códigos, dossiê e contestação num único caminho.</p>
+</div></header>
+
+<main>
+  <details class="pac">
+    <summary>Dados do paciente (opcional, preenchem os textos)</summary>
+    <div class="grid">
+      <label>Nome <input id="p_nome" autocomplete="off"></label>
+      <label>Operadora <input id="p_op" autocomplete="off"></label>
+      <label>Carteirinha <input id="p_cart" autocomplete="off"></label>
+      <label>Protocolo da negativa <input id="p_prot" autocomplete="off"></label>
+      <label>Data da negativa <input id="p_data" type="date"></label>
+      <label>Data da solicitação <input id="p_sol" type="date"></label>
+    </div>
+  </details>
+
+  <div class="via" id="via"></div>
+</main>
+<footer id="foot"></footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script id="kb" type="application/json">{"meta": {"versao": "1.1", "data": "2026-09-10", "medico": {"nome": "Dr. Alfredo Magalhães", "crm": "CREMESP 135506", "rqe": "RQE 72972"}, "aviso": "Itens marcados [confirmar] ou [PREENCHER] devem ser validados pelo médico antes do uso. Códigos conferidos em tabelas TUSS públicas; valores de remuneração variam por operadora."}, "alarme": ["Sintomas sistêmicos (febre, perda de peso)", "História de neoplasia", "Déficit neurológico ou alteração de consciência", "Início súbito (cefaleia em trovoada)", "Início após os 50 anos", "Mudança de padrão ou cefaleia recente", "Piora com a posição (ortostática/decúbito)", "Desencadeada por tosse, esforço ou Valsalva", "Papiledema", "Evolução progressiva ou apresentação atípica", "Gestação ou puerpério", "Dor ocular com sinais autonômicos", "Início pós-traumático", "Imunossupressão", "Uso excessivo de analgésicos ou medicação nova"], "exames": {"rm_cranio": {"nome": "RM de crânio (encéfalo) com e sem contraste", "tuss": "41101014"}, "rm_sela": {"nome": "RM de sela túrcica / hipófise", "tuss": "41101022"}, "rm_cervical": {"nome": "RM de coluna cervical", "tuss": "41101227"}, "angio_rm": {"nome": "Angio-RM arterial de crânio (3D TOF)", "tuss": "41101324 [confirmar]"}, "tc_cervical": {"nome": "TC de coluna cervical (C1–C2)", "tuss": "[PREENCHER]"}, "tc_base": {"nome": "TC de base de crânio (forame oval)", "tuss": "[PREENCHER]"}}, "procedimentos": {"bloqueio": {"nome": "Bloqueio de nervos cranianos", "codigos": [{"tuss": "31602045", "desc": "Bloqueio anestésico de nervos cranianos", "qtd": "por nervo/lado, conforme regra da operadora", "ref": "CH 250 em tabela de referência"}], "materiais": ["Agulha hipodérmica 25G ou 27G — 2 un.", "Seringa 5 mL — 2 un.", "Gaze estéril — 1 pct.", "Clorexidina alcoólica 0,5%", "Luvas estéreis — 1 par"], "alerta_base": "A base atual da skill lista 'Ropivacaína 2% sem vaso' — essa apresentação não existe (ropivacaína: 0,2%, 0,75% ou 1%). Corrigir para evitar glosa de material."}, "botox": {"nome": "Toxina botulínica (PREEMPT)", "codigos": [{"tuss": "20103140", "desc": "Bloqueio fenólico, alcoólico ou com toxina botulínica (de pontos motores) — por membro ou segmento corporal", "qtd": "por segmento (cabeça e pescoço) — confirmar regra da operadora", "ref": "Rol com DUT restrita a distonias/espasticidade"}], "materiais": ["Seringa 1 mL (tuberculina) — [PREENCHER quantidade]", "Agulha 30G ½\" — [PREENCHER quantidade]", "Gaze estéril", "Álcool 70%", "Luvas"], "medicamentos": ["Toxina onabotulínica A 100 U — 2 frascos (155–195 U)", "Soro fisiológico 0,9% 10 mL — reconstituição (2 mL por frasco = 5 U/0,1 mL)"], "alerta_base": "Unidades de toxinas de marcas diferentes não são intercambiáveis. Pedir onabotulínica A (a do PREEMPT) e não aceitar troca de marca sem conversão justificada."}, "rf": {"nome": "Radiofrequência", "codigos": [], "materiais": ["Placa dispersiva (eletrodo neutro)", "Agulha 25G e seringas 5/10 mL (anestesia local)", "Kit campo estéril"], "alerta_base": "Cânulas, eletrodos e gerador: confirmar modelos com o fornecedor habitual antes de gerar a guia."}}, "cefaleias": {"enxaqueca": {"nome": "Enxaqueca", "assinatura": "Pulsátil, piora com esforço, náusea, foto e fonofobia", "ichd": "ICHD-3 1.3 (crônica)", "cid": "G43.x — confirmar se a operadora aceita G43.7", "criterios": ["≥15 dias de cefaleia por mês há mais de 3 meses", "≥8 dias/mês com características de migrânea (ou resposta a triptano)", "Diário de cefaleia de pelo menos 4 semanas", "Uso excessivo de medicação sintomática avaliado"], "exames": [{"id": "rm_cranio", "quando": "Sinais de alarme, aura atípica ou antes do Botox (dossiê)", "just": "Exclusão de cefaleia secundária antes de procedimento em paciente com enxaqueca crônica refratária."}], "proc": {"bloqueio": {"risco": "moderado", "nota": "Ponte no uso excessivo de analgésicos e na crise refratária.", "nervos": "Occipital maior bilateral ± supraorbital, supratroclear, auriculotemporal", "medicamentos": ["Lidocaína 2% sem vasoconstritor — 1 frasco", "ou Ropivacaína 0,75% (7,5 mg/mL) — 1 ampola"], "alerta": "Na enxaqueca o corticoide não acrescentou benefício ao anestésico isolado — preferir só anestésico.", "check": ["Diagnóstico ICHD-3 documentado", "Indicação: ponte no uso excessivo de medicação ou crise refratária", "Profiláticos atuais e prévios registrados", "Nervos e lateralidade definidos", "Se repetição: % de melhora e duração da sessão anterior"], "racional": "O bloqueio anestésico do nervo occipital maior é recomendado como terapia de transição na enxaqueca crônica, especialmente no contexto de uso excessivo de medicação sintomática, com o objetivo de reduzir a frequência das crises e o consumo de analgésicos (Blumenfeld et al., 2013).", "refs": ["ichd3", "blumenfeld"]}, "botox": {"risco": "alto", "nota": "Fora da DUT. Só com dossiê completo — o critério da Conitec (falha de ≥3 profiláticos) é o que a auditoria vai cobrar.", "check": ["Idade ≥18 anos", "Enxaqueca crônica ICHD-3 1.3 comprovada por diário", "Falha, intolerância ou contraindicação a ≥3 profiláticos (classe, dose, tempo, desfecho)", "Uso excessivo de medicação sintomática manejado", "MIDAS e HIT-6 basais", "RM de crânio sem causa secundária", "Sem gestação, lactação ou doença da junção neuromuscular", "Renovação: redução ≥30% dos dias de cefaleia após 2 ciclos (NICE)"], "racional": "A toxina onabotulínica A no protocolo PREEMPT (155–195 U em 31–39 pontos, a cada 12 semanas) reduziu de forma significativa os dias de cefaleia em ensaios randomizados de fase III (Aurora et al., 2010; Diener et al., 2010; Dodick et al., 2010) e é recomendada pelo NICE (TA260) na enxaqueca crônica após falha de três profiláticos — mesmo critério da proposta em avaliação pela Conitec (Consulta Pública nº 70/2026).", "refs": ["ichd3", "preempt1", "preempt2", "preemptpool", "nice260", "conitec70"], "alvo": "Protocolo PREEMPT: 155 U em 31 pontos fixos, 7 grupos musculares de cabeça e pescoço (até 195 U em 39 pontos, follow-the-pain), a cada 12 semanas"}, "rf": {"risco": "nao", "nota": "Sem indicação de radiofrequência na enxaqueca."}}}, "tensional": {"nome": "Tipo tensional", "assinatura": "Em aperto ou pressão, bilateral, sem náusea, não piora com esforço", "ichd": "ICHD-3 2.3 (crônica)", "cid": "G44.2", "criterios": ["Frequência documentada (crônica: ≥15 dias/mês há >3 meses)", "Dor em pressão ou aperto, bilateral, leve a moderada", "Sem náusea/vômitos e no máximo foto OU fonofobia", "Ausência de características migranosas"], "exames": [{"id": "rm_cranio", "quando": "Apenas com sinal de alarme", "just": "Sinal de alarme presente — exclusão de cefaleia secundária."}], "proc": {"bloqueio": {"risco": "moderado-alto", "nota": "Evidência fraca. Só com justificativa individual forte.", "nervos": "Occipital maior bilateral", "medicamentos": ["Lidocaína 2% sem vasoconstritor — 1 frasco"], "check": ["Cefaleia tipo tensional crônica documentada", "Falha de profilaxia (ex.: amitriptilina) com dose e tempo", "Dor à palpação pericraniana/cervical registrada", "Justificativa individual da indicação"], "racional": "Indicação individualizada como terapia adjuvante na cefaleia do tipo tensional crônica refratária à profilaxia, com dor à palpação da musculatura pericraniana e cervical.", "refs": ["ichd3", "blumenfeld"]}, "botox": {"risco": "nao", "nota": "Não solicitar: ensaios controlados negativos e a diretriz EFNS não recomenda. Glosa difícil de reverter."}, "rf": {"risco": "nao", "nota": "Sem indicação de radiofrequência na cefaleia tensional."}}}, "arnold": {"nome": "Neuralgia occipital (Arnold)", "assinatura": "Choques ou pontadas na nuca e couro cabeludo posterior, dor à palpação do nervo", "ichd": "ICHD-3 13.4", "cid": "[PREENCHER — sem código específico na CID-10; definir padrão]", "criterios": ["Dor paroxística no território do occipital maior, menor e/ou terceiro occipital", "Disestesia ou alodinia no couro cabeludo", "Dor à palpação ou sinal de Tinel sobre o nervo", "Alívio temporário com bloqueio anestésico do nervo acometido"], "exames": [{"id": "rm_cervical", "quando": "Sempre antes de radiofrequência; déficit ou dor atípica", "just": "Exclusão de compressão estrutural na junção craniocervical (C1–C2) antes de procedimento intervencionista."}, {"id": "rm_cranio", "quando": "Avaliar fossa posterior (malformação de Chiari)", "just": "Exclusão de lesão de fossa posterior e malformação de Chiari como causa secundária."}, {"id": "tc_cervical", "quando": "Suspeita de patologia óssea ou contraindicação à RM", "just": "Avaliação óssea/degenerativa de C1–C2."}], "proc": {"bloqueio": {"risco": "baixo", "nota": "Diagnóstico e terapêutico — o alívio com o bloqueio faz parte do critério da ICHD-3.", "nervos": "Occipital maior ± menor, no(s) lado(s) acometido(s)", "medicamentos": ["Lidocaína 2% sem vasoconstritor — 1 frasco", "Dexametasona 10 mg (Decadron) — 1 ampola [padrão atual da base]"], "check": ["Neuralgia occipital documentada (ICHD-3 13.4)", "Finalidade diagnóstica e terapêutica registrada", "Nervo(s) e lado(s) definidos", "Registrar % de alívio e duração (habilita a radiofrequência)"], "racional": "Na neuralgia occipital o bloqueio anestésico tem finalidade diagnóstica e terapêutica: o alívio temporário após o bloqueio do nervo acometido integra os critérios diagnósticos da ICHD-3 (13.4).", "refs": ["ichd3", "blumenfeld"]}, "botox": {"risco": "nao", "nota": "Sem indicação consolidada de toxina na neuralgia occipital."}, "rf": {"risco": "baixo", "modalidade": "Pulsada", "alvo": "Nervo occipital maior e/ou menor (uni ou bilateral)", "nota": "Liberada após bloqueio teste positivo com retorno da dor. Coberta pela DUT 62 (item 3) se refratária a ≥3 meses de tratamento clínico contínuo.", "codigos": [{"tuss": "31403336", "desc": "Rizotomia percutânea por segmento — qualquer método", "qtd": "por segmento/lado", "ref": "DUT 62, item 3"}, {"tuss": "40811026", "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)", "qtd": "por hora ou fração", "ref": "se guiada por radioscopia"}], "materiais_extra": ["Cânula de RF 22G, 5–10 cm, ponta ativa 5 mm — 1 por lado [confirmar]", "Eletrodo/sonda de RF compatível com o gerador"], "medicamentos": ["Lidocaína 2% sem vasoconstritor — 1 frasco (pele e teste)"], "alerta": "Pulsada não é ablativa: descreva a técnica na guia. Alguns auditores questionam o termo 'rizotomia' — confirme o enquadramento com a operadora.", "check": ["Neuralgia occipital ICHD-3 13.4 documentada", "Tratamento clínico contínuo ≥3 meses com falha ou intolerância (DUT 62)", "Bloqueio teste positivo do mesmo alvo, com retorno da dor (etapa anterior)", "RM de coluna cervical e crânio sem causa estrutural", "Nervo(s), lado(s) e técnica pulsada descritos", "Radioscopia/ultrassom e materiais discriminados na guia"], "racional": "O paciente preenche a DUT 62 (item 3) do Rol da ANS: neuralgia occipital refratária a tratamento clínico contínuo por pelo menos 3 meses, com bloqueio diagnóstico positivo. A radiofrequência pulsada do nervo occipital, técnica não destrutiva, foi superior à injeção de corticoide em ensaio randomizado (Cohen et al., 2015) e manteve alívio em seguimento prospectivo (Vanelderen et al., 2010).", "refs": ["ichd3", "dut62", "cohen2015", "vanelderen", "prf_rs2024"]}}}, "salvas": {"nome": "Cefaleia em salvas", "assinatura": "Unilateral orbitária, 15–180 min, lacrimejamento, rinorreia, inquietação", "ichd": "ICHD-3 3.1 (3.1.2 crônica)", "cid": "G44.0", "criterios": ["Dor unilateral orbitária, supraorbitária e/ou temporal, intensa, de 15–180 min", "Sinais autonômicos ipsilaterais e/ou inquietação", "Frequência de 1 crise a cada 2 dias até 8/dia", "Crônica: sem remissão ≥3 meses por pelo menos 1 ano"], "exames": [{"id": "rm_cranio", "quando": "Todos os casos", "just": "Exclusão de cefaleia trigêmino-autonômica sintomática (lesões selares, parasselares e de seio cavernoso)."}, {"id": "rm_sela", "quando": "Se o serviço fizer protocolo dedicado de hipófise", "just": "Lesões hipofisárias podem mimetizar cefaleia em salvas."}], "proc": {"bloqueio": {"risco": "baixo", "nota": "Occipital maior ipsilateral com corticoide — ensaios randomizados positivos.", "nervos": "Occipital maior ipsilateral à dor", "medicamentos": ["Lidocaína 2% sem vasoconstritor — 1 frasco", "Corticoide de depósito (ex.: metilprednisolona 40 mg/mL ou betametasona) — 1 ampola", "ou Dexametasona 10 mg (Decadron) — padrão atual da base"], "alerta": "Na salvas o corticoide é o componente com evidência — não omitir.", "check": ["Cefaleia em salvas ICHD-3 3.1 documentada", "Momento: início do período de salvas ou transição de profilaxia", "Lado da dor definido", "Profilaxia de base em curso ou planejada"], "racional": "Na cefaleia em salvas, a injeção suboccipital de corticoide associada a anestésico no território do nervo occipital maior ipsilateral reduz a frequência das crises como tratamento de transição, com eficácia demonstrada em ensaios randomizados controlados (Ambrosini et al., 2005; Leroux et al., 2011).", "refs": ["ichd3", "ambrosini", "leroux"]}, "botox": {"risco": "nao", "nota": "Sem indicação consolidada de toxina na cefaleia em salvas."}, "rf": {"risco": "alto", "modalidade": "Pulsada", "alvo": "Mesmo alvo do bloqueio teste positivo: occipital maior ipsilateral ou gânglio esfenopalatino", "nota": "Liberada após bloqueio teste positivo com retorno da dor. Fora da DUT 62 — evidência de séries de casos.", "codigos": [{"tuss": "31403336", "desc": "Rizotomia percutânea por segmento — qualquer método", "qtd": "1 (alvo ipsilateral)", "ref": "radiofrequência pulsada — confirmar enquadramento; fora da DUT 62"}, {"tuss": "40811026", "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)", "qtd": "por hora ou fração", "ref": "obrigatória no acesso ao gânglio esfenopalatino"}], "materiais_extra": ["Cânula de RF curva 20–22G, 10 cm, ponta ativa 5 mm [confirmar]", "Eletrodo/sonda de RF compatível com o gerador"], "medicamentos": ["Lidocaína 2% sem vasoconstritor — 1 frasco"], "alerta": "Pedido fora do Rol: exige o checklist dos 5 requisitos da ADI 7265. Se optar por lesão térmica do gânglio esfenopalatino, o código passa a ser 31602134 (bloqueio neurolítico) — confirmar enquadramento.", "check": ["Salvas crônica (ICHD-3 3.1.2) refratária", "Falha de profiláticos (verapamil, lítio etc.) com dose e tempo", "Bloqueio teste positivo do mesmo alvo, com retorno da dor (etapa anterior)", "RM de crânio/sela sem lesão", "Checklist ADI 7265 preenchido (etapa de contestação)"], "racional": "Cefaleia em salvas crônica refratária aos profiláticos disponíveis. A radiofrequência pulsada do gânglio esfenopalatino guiada por imagem apresentou alívio sustentado em seguimento de 12 a 30 meses (Fang et al., 2016), e a do nervo occipital é aplicada em protocolos padronizados após bloqueio diagnóstico positivo, com evidência ainda de baixa qualidade (revisão sistemática, 2024). A lesão térmica do gânglio é alternativa descrita em séries de casos (Sanders & Zuurmond, 1997; Narouze et al., 2009).", "refs": ["ichd3", "fang2016", "prf_rs2024", "sanders", "narouze"]}}}, "trigemeo": {"nome": "Neuralgia do trigêmeo", "assinatura": "Choques de segundos na face, com gatilho ao falar, mastigar ou tocar", "ichd": "ICHD-3 13.1", "cid": "G50.0", "criterios": ["Paroxismos de dor de <1 s a 2 min em um ou mais ramos do trigêmeo", "Dor intensa em choque, pontada ou facada", "Desencadeada por estímulos inócuos no território acometido", "Classificada: clássica (compressão neurovascular), idiopática ou secundária"], "exames": [{"id": "rm_cranio", "quando": "Todos os casos — com T2 de alta resolução (FIESTA/CISS) e contraste", "just": "Pesquisa de compressão neurovascular e exclusão de tumor de ângulo pontocerebelar e esclerose múltipla."}, {"id": "angio_rm", "quando": "Junto com a RM — planejamento terapêutico", "just": "Caracterização do vaso responsável pela compressão neurovascular."}, {"id": "tc_base", "quando": "Opcional — anatomia difícil do forame oval", "just": "Planejamento do acesso percutâneo ao gânglio de Gasser."}], "proc": {"bloqueio": {"risco": "moderado", "nota": "Ponte até ajuste medicamentoso ou procedimento definitivo.", "nervos": "Supraorbital, infraorbital e/ou mentoniano, conforme o ramo", "medicamentos": ["Lidocaína 2% sem vasoconstritor — 1 frasco", "ou Ropivacaína 0,75% — 1 ampola"], "check": ["Neuralgia do trigêmeo documentada", "Finalidade: ponte terapêutica", "Ramo(s) acometido(s) definido(s)"], "racional": "Bloqueio de ramos periféricos do trigêmeo como terapia de transição para controle da dor paroxística até o ajuste medicamentoso ou a realização de procedimento definitivo.", "refs": ["ichd3", "ean_nt"]}, "botox": {"risco": "alto", "nota": "Off-label e fora do Rol. Reservar para contraindicação a procedimento percutâneo ou cirúrgico.", "check": ["Refratária a carbamazepina/oxcarbazepina e ≥1 alternativa", "Contraindicação a procedimento percutâneo ou cirúrgico documentada", "Checklist ADI 7265 preenchido"], "racional": "Uso off-label, reservado a paciente refratário com contraindicação documentada a procedimentos percutâneos ou cirúrgicos.", "refs": ["ean_nt"], "alvo": "Pontos no território do(s) ramo(s) acometido(s) — dose [PREENCHER]"}, "rf": {"risco": "baixo", "modalidade": "Térmica", "alvo": "Gânglio de Gasser via forame oval, sob radioscopia e sedação", "nota": "Coberta pela DUT 62 (item 3). Alternativas no mesmo raciocínio: compressão por balão e descompressão microvascular.", "codigos": [{"tuss": "31404030", "desc": "Tratamento de nevralgia do trigêmio por técnica cirúrgica percutânea — qualquer método", "qtd": "1", "ref": "código mais específico; a descrição manda cobrar a imagem à parte"}, {"tuss": "40811026", "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)", "qtd": "por hora ou fração", "ref": "obrigatória"}], "materiais_extra": ["Cânula de RF 20–22G, 10 cm, ponta ativa 2–5 mm (tipo Tew/Sluijter) [confirmar]", "Eletrodo termopar compatível com o gerador"], "medicamentos": ["Lidocaína 2% sem vasoconstritor — 1 frasco (pele)", "Sedação a cargo da anestesiologia (solicitar à parte)"], "alerta": "Use 31404030 (específico), não 31403336 (genérico). Solicite também a rotina pré-operatória para sedação.", "check": ["Neuralgia do trigêmeo ICHD-3 13.1 documentada", "Carbamazepina/oxcarbazepina ≥3 meses com falha ou intolerância (DUT 62)", "RM com FIESTA/CISS e angio-RM avaliadas", "Ramo(s) acometido(s) definido(s)", "Alternativas discutidas: descompressão microvascular e compressão por balão", "Pré-operatório para sedação solicitado"], "racional": "O paciente preenche a DUT 62 (item 3) do Rol da ANS: neuralgia do trigêmeo refratária ou intolerante a tratamento clínico contínuo por pelo menos 3 meses. A rizotomia percutânea por radiofrequência térmica do gânglio de Gasser é técnica consolidada, com alto índice de alívio e seguimento de longo prazo (Kanpolat et al., 2001), e figura entre as opções cirúrgicas da diretriz da EAN (Bendtsen et al., 2019); a radiofrequência térmica foi superior à pulsada em ensaio randomizado (Erdine et al., 2007).", "refs": ["ichd3", "dut62", "kanpolat", "ean_nt", "erdine"]}}}}, "referencias": {"ichd3": "Headache Classification Committee of the International Headache Society. The International Classification of Headache Disorders, 3rd edition. Cephalalgia 2018;38(1):1–211.", "blumenfeld": "Blumenfeld A et al. Expert consensus recommendations for the performance of peripheral nerve blocks for headaches. Headache 2013;53(3):437–446.", "preempt1": "Aurora SK et al. OnabotulinumtoxinA for treatment of chronic migraine: PREEMPT 1. Cephalalgia 2010;30(7):793–803.", "preempt2": "Diener HC et al. OnabotulinumtoxinA for treatment of chronic migraine: PREEMPT 2. Cephalalgia 2010;30(7):804–814.", "preemptpool": "Dodick DW et al. OnabotulinumtoxinA for treatment of chronic migraine: pooled PREEMPT results. Headache 2010;50(6):921–936.", "nice260": "NICE. Technology appraisal guidance TA260: Botulinum toxin type A for the prevention of headaches in adults with chronic migraine. 2012.", "conitec70": "Conitec/MS. Consulta Pública nº 70/2026 — toxina botulínica A no tratamento profilático da migrânea crônica após falha de ≥3 profiláticos.", "ambrosini": "Ambrosini A et al. Suboccipital injection with a mixture of rapid- and long-acting steroids in cluster headache: a double-blind placebo-controlled study. Pain 2005;118(1–2):92–96.", "leroux": "Leroux E et al. Suboccipital steroid injections for transitional treatment of patients with more than two cluster headache attacks per day. Lancet Neurol 2011;10(10):891–897.", "cohen2015": "Cohen SP et al. Pulsed radiofrequency versus steroid injections for occipital neuralgia or migraine with occipital nerve tenderness. Pain 2015;156(12):2585–2594. Critério de inclusão: bloqueio anestésico diagnóstico com ≥50% de alívio por ≥90 min (lidocaína) ou ≥3 h (bupivacaína/ropivacaína) — NCT01670825.", "vanelderen": "Vanelderen P et al. Pulsed radiofrequency for the treatment of occipital neuralgia: a prospective study with 6 months of follow-up. Reg Anesth Pain Med 2010;35(2):148–151.", "sanders": "Sanders M, Zuurmond WW. Efficacy of sphenopalatine ganglion blockade in 66 patients suffering from cluster headache. J Neurosurg 1997;87(6):876–880.", "narouze": "Narouze S et al. Sphenopalatine ganglion radiofrequency ablation for the management of chronic cluster headache. Headache 2009;49(4):571–577.", "kanpolat": "Kanpolat Y et al. Percutaneous controlled radiofrequency trigeminal rhizotomy for the treatment of idiopathic trigeminal neuralgia: 25-year experience with 1,600 patients. Neurosurgery 2001;48(3):524–534.", "ean_nt": "Bendtsen L et al. European Academy of Neurology guideline on trigeminal neuralgia. Eur J Neurol 2019;26(6):831–849.", "erdine": "Erdine S et al. Comparison of pulsed radiofrequency with conventional radiofrequency in the treatment of idiopathic trigeminal neuralgia. Eur J Pain 2007;11(3):309–313.", "dut62": "ANS. Rol de Procedimentos e Eventos em Saúde — DUT 62: Rizotomia percutânea com ou sem radiofrequência, item 3 (nevralgias do trigêmeo, glossofaríngeo, occipital ou intermédio refratárias a tratamento clínico contínuo por ≥3 meses).", "fang2016": "Fang L et al. Computerized tomography-guided sphenopalatine ganglion pulsed radiofrequency treatment in 16 patients with refractory cluster headaches: twelve- to 30-month follow-up evaluations. Cephalalgia 2016;36(2):106–112.", "prf_rs2024": "Pulsed radiofrequency neuromodulation of the greater occipital nerve for the treatment of headache disorders in adults: a systematic review. Can J Pain 2024."}, "glosas": {"fora_rol": {"nome": "Fora do Rol / fora da DUT", "ouvidoria": "A negativa fundamenta-se na ausência de previsão no Rol/DUT. Nos termos do art. 10, §13, da Lei 9.656/1998 (redação da Lei 14.454/2022) e dos critérios fixados pelo STF na ADI 7265, a cobertura é devida quando cumpridos cumulativamente: (i) prescrição do médico assistente — anexa; (ii) inexistência de negativa expressa da ANS ou de análise pendente; (iii) ausência de alternativa terapêutica adequada no Rol para este paciente, que já apresentou falha às opções disponíveis (tabela anexa); (iv) eficácia e segurança demonstradas por evidência de alto nível — {refs}; (v) registro na Anvisa.", "interno": "Para o Botox na enxaqueca, a ANS recomendou em 2020 não incluir a migrânea crônica na DUT — é o ponto fraco do requisito (ii). Argumente com evidência posterior e com a avaliação atual da Conitec, sem omitir o fato.", "nip": "a operadora alegou que o procedimento não está no Rol da ANS, mas meu caso cumpre os requisitos da lei e do STF para cobertura fora do Rol, e já tentei sem sucesso os tratamentos disponíveis"}, "dut62": {"nome": "Não preenche a DUT 62", "ouvidoria": "O paciente preenche integralmente o item 3 da DUT 62: diagnóstico de {dx}, refratário ou intolerante a tratamento clínico contínuo por pelo menos 3 meses (tabela de tratamentos anexa). Solicita-se a indicação objetiva de qual requisito da DUT não estaria atendido, conforme o dever de fundamentação da RN 623/2024.", "nip": "a operadora alegou que não cumpro a diretriz de utilização, mas cumpro todos os requisitos: tenho o diagnóstico e fiz mais de 3 meses de tratamento com remédios, sem melhora"}, "falha": {"nome": "Falha terapêutica não comprovada", "ouvidoria": "Segue tabela de tratamentos prévios com medicamento, dose, período de uso e desfecho (falha, intolerância ou contraindicação), extraída do prontuário, demonstrando o esgotamento das alternativas antes da indicação atual.", "nip": "a operadora disse que não comprovei os tratamentos anteriores, mas meu médico enviou a lista completa com doses e períodos"}, "estetico": {"nome": "Procedimento estético", "ouvidoria": "Trata-se de procedimento terapêutico para doença neurológica ({dx}, CID {cid}), em protocolo com pontos e doses definidos por ensaios clínicos, sem qualquer finalidade estética.", "nip": "a operadora tratou como procedimento estético, mas é tratamento de uma doença neurológica"}, "quantidade": {"nome": "Quantidade de unidades, frascos ou nervos", "ouvidoria": "A quantidade solicitada decorre do protocolo validado e da anatomia acometida (número de nervos, lados ou segmentos). Para toxina botulínica, o protocolo PREEMPT utiliza 155–195 U, o que exige 2 frascos de 100 U; unidades de toxinas diferentes não são intercambiáveis.", "nip": "a operadora liberou quantidade menor do que a necessária para o protocolo indicado pelo meu médico"}, "divergencia": {"nome": "Divergência do auditor", "ouvidoria": "Havendo divergência técnico-assistencial entre o médico auditor e o médico assistente, requer-se a instauração de junta médica nos termos da RN ANS 424/2017, com a indicação do profissional desempatador.", "nip": "o médico da operadora discordou do meu médico sem realizar a junta médica prevista nas regras da ANS"}, "material": {"nome": "Radioscopia, material ou sedação negados", "ouvidoria": "Os itens negados (radioscopia, cânula/eletrodo e/ou sedação) são indispensáveis à execução segura do procedimento autorizado. Autorizar o ato e negar os meios necessários equivale, na prática, à negativa do próprio procedimento.", "nip": "a operadora autorizou o procedimento mas negou os materiais e equipamentos sem os quais ele não pode ser feito"}, "exame": {"nome": "Exame de imagem negado", "ouvidoria": "O exame foi indicado para exclusão de causa secundária antes de procedimento intervencionista e/ou diante de sinal de alarme, conforme justificativa clínica anexa e diretrizes citadas ({refs}).", "nip": "a operadora negou o exame que meu médico pediu para excluir outras causas antes do procedimento"}, "prazo": {"nome": "Sem resposta no prazo", "ouvidoria": "Transcorrido o prazo máximo de atendimento previsto na RN ANS 566/2022 sem resposta conclusiva, requer-se a autorização imediata e a comunicação por escrito, nos termos da RN 623/2024.", "nip": "a operadora não respondeu ao pedido dentro do prazo da ANS"}}, "bloqueio_teste": {"aplica": ["arnold", "salvas"], "criterio_positivo": "Alívio ≥50% da dor durante a ação do anestésico: ≥90 min com lidocaína ou ≥3 h com bupivacaína/ropivacaína (critério de inclusão do ensaio de Cohen et al.).", "anestesicos": {"lidocaina": {"nome": "Lidocaína 2% sem vasoconstritor", "janela": "90 min"}, "ropivacaina": {"nome": "Ropivacaína 0,75% (7,5 mg/mL)", "janela": "3 h"}, "bupivacaina": {"nome": "Bupivacaína 0,5% sem vasoconstritor", "janela": "3 h"}}, "observacao_min_sem": 4, "observacao_max_sem": 12, "nota_literatura": "A positividade do teste está definida na literatura (≥50% de alívio na janela do anestésico). O período de observação de 4 a 12 semanas é parâmetro do protocolo IN NEURO: não há prazo fixo em diretriz — a radiofrequência pulsada é considerada quando o alívio do bloqueio não se sustenta. Na neuralgia occipital, esse período com medicação conta para os 3 meses de tratamento clínico exigidos pela DUT 62.", "alvos": {"arnold": ["Occipital maior", "Occipital menor", "Occipital maior + menor"], "salvas": ["Occipital maior ipsilateral", "Gânglio esfenopalatino ipsilateral"]}, "registro": ["Data, alvo e lado", "Fármaco e volume", "Dor (0–10) antes do bloqueio", "Dor em 30 min, 1 h, 3 h e 24 h", "Dias de alívio", "Data do retorno da dor", "Medicação durante a observação"]}}</script>
+<script>
+const KB = JSON.parse(document.getElementById('kb').textContent);
+const S = { dor:null, crit:new Set(), alarme:new Set(), laudo:new Set(), proc:null, dos:new Set(), glosa:'', teste:novoTeste() };
+function novoTeste(){ return {alvo:'', lado:'', farm:'lidocaina', data:'', pre:'', min:'', janela:false, retorno:false, dias:'', semanas:''}; }
+
+const RISCO = {
+  'baixo':        {cor:'var(--baixo)', txt:'Risco de glosa baixo'},
+  'moderado':     {cor:'var(--moderado)', txt:'Risco de glosa moderado'},
+  'moderado-alto':{cor:'var(--moderado-alto)', txt:'Risco de glosa moderado a alto'},
+  'alto':         {cor:'var(--alto)', txt:'Risco de glosa alto'},
+  'nao':          {cor:'var(--nao)', txt:'Não solicitar'}
+};
+const CURTA = {
+  ichd3:'ICHD-3, 2018', blumenfeld:'Blumenfeld et al., 2013', preempt1:'Aurora et al., 2010', preempt2:'Diener et al., 2010',
+  preemptpool:'Dodick et al., 2010', nice260:'NICE TA260, 2012', conitec70:'Conitec CP 70/2026', ambrosini:'Ambrosini et al., 2005',
+  leroux:'Leroux et al., 2011', cohen2015:'Cohen et al., 2015', vanelderen:'Vanelderen et al., 2010', sanders:'Sanders & Zuurmond, 1997',
+  narouze:'Narouze et al., 2009', kanpolat:'Kanpolat et al., 2001', ean_nt:'Bendtsen et al., 2019 (EAN)', erdine:'Erdine et al., 2007', dut62:'ANS, DUT 62', fang2016:'Fang et al., 2016', prf_rs2024:'Revisão sistemática, Can J Pain 2024'
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const pac = () => ({
+  nome: $('p_nome').value.trim() || '[nome do paciente]',
+  op: $('p_op').value.trim() || '[operadora]',
+  cart: $('p_cart').value.trim() || '[carteirinha]',
+  prot: $('p_prot').value.trim() || '[protocolo]',
+  data: fmt($('p_data').value) || '[data da negativa]',
+  sol: fmt($('p_sol').value) || '[data da solicitação]'
+});
+function fmt(v){ if(!v) return ''; const [y,m,d]=v.split('-'); return `${d}/${m}/${y}`; }
+
+const dor = () => S.dor ? KB.cefaleias[S.dor] : null;
+const pd  = () => (S.dor && S.proc) ? dor().proc[S.proc] : null;
+const pb  = () => S.proc ? KB.procedimentos[S.proc] : null;
+
+function examesDoCaso(){
+  const c = dor(); if(!c) return [];
+  let lista = c.exames.slice();
+  if(S.alarme.size && !lista.some(e=>e.id==='rm_cranio')){
+    lista.unshift({id:'rm_cranio', quando:'Sinal de alarme presente', just:'Sinal de alarme — exclusão de cefaleia secundária.'});
+  }
+  return lista.map(e => ({...e, ...KB.exames[e.id]}));
+}
+const isOpt = e => /Opcional|Apenas|Se o serviço|Suspeita/.test(e.quando);
+function codigosDoCaso(){ const p=pd(); return (p && p.codigos) ? p.codigos : (pb() ? pb().codigos : []); }
+function materiaisDoCaso(){ return [...(pb()?.materiais||[]), ...(pd()?.materiais_extra||[])]; }
+function medsDoCaso(){ return pd()?.medicamentos || pb()?.medicamentos || []; }
+
+const precisaTeste = () => S.proc==='rf' && (KB.bloqueio_teste.aplica||[]).includes(S.dor);
+function veredito(){
+  const T=S.teste, B=KB.bloqueio_teste;
+  if(!T.data || T.pre==='' || T.min==='') return {k:'pendente', cor:'var(--nao)', tit:'Bloqueio teste ainda não registrado', txt:'Primeiro passo: realizar o bloqueio anestésico teste do alvo. A guia está logo abaixo.'};
+  const pre=+T.pre, min=+T.min, pct = pre>0 ? Math.round((pre-min)/pre*100) : 0, sem = T.semanas==='' ? 0 : +T.semanas;
+  const jan = B.anestesicos[T.farm].janela;
+  if(pct<50 || !T.janela) return {k:'negativo', pct, cor:'var(--alto)', tit:`Teste negativo (${pct}% de alívio)`, txt:`${pct<50?'Alívio abaixo de 50%.':'Alívio não sustentado por '+jan+'.'} Radiofrequência pulsada não indicada — rever diagnóstico, alvo ou técnica do bloqueio.`};
+  if(T.retorno) return {k:'indicada', pct, cor:'var(--baixo)', tit:`Teste positivo (${pct}%) com retorno da dor`, txt:`Radiofrequência pulsada do mesmo alvo indicada. As próximas etapas foram liberadas.`};
+  if(sem >= B.observacao_max_sem) return {k:'sustentado', pct, cor:'var(--teal)', tit:`Alívio sustentado por ${sem} semanas`, txt:'Sem indicação de radiofrequência agora: repetir o bloqueio quando a dor voltar e reavaliar.'};
+  return {k:'observacao', pct, cor:'var(--moderado)', tit:`Teste positivo (${pct}%) — em observação`, txt:`Manter o tratamento medicamentoso e reavaliar entre ${B.observacao_min_sem} e ${B.observacao_max_sem} semanas. Se a dor voltar, marque abaixo.`};
+}
+function frasesTeste(){
+  if(!precisaTeste()) return '';
+  const T=S.teste, v=veredito(); if(v.k!=='indicada') return '';
+  const f=KB.bloqueio_teste.anestesicos[T.farm];
+  return `Em ${fmt(T.data)} foi realizado bloqueio anestésico teste (${(T.alvo||'[alvo]').toLowerCase()}${T.lado?', '+T.lado.toLowerCase():''}) com ${f.nome.toLowerCase()}, com redução da dor de ${T.pre} para ${T.min}/10 (${v.pct}% de alívio), sustentada por pelo menos ${f.janela} — teste positivo pelo critério de ≥50% de alívio na janela do anestésico (Cohen et al., 2015). A dor retornou após ${T.dias||'[x]'} dias${T.semanas?', dentro do período de observação de '+T.semanas+' semanas':''}, apesar do tratamento medicamentoso.`;
+}
+
+/* ---------- Render ---------- */
+function render(){
+  const trava = precisaTeste() && veredito().k!=='indicada';
+  const depois = [stepDossie(), stepGuia(), stepRelatorio(), stepGlosa()].map(s => trava ? {titulo:s.titulo, sub:'Liberada após bloqueio teste positivo com retorno da dor.', locked:true} : s);
+  const steps = [stepDor(), stepCrit(), stepExames(), stepProc(), ...(precisaTeste()?[stepTeste()]:[]), ...depois];
+  $('via').innerHTML = steps.map((s,i)=>`
+    <section class="step ${s.done?'done':''} ${s.locked?'locked':''}" aria-disabled="${!!s.locked}">
+      <div class="dot">${i+1}</div>
+      <h2>${s.titulo}</h2>${s.sub?`<p class="sub">${s.sub}</p>`:''}
+      ${s.locked ? '' : s.html}
+    </section>`).join('');
+  bind();
+}
+
+function stepDor(){
+  const html = `<div class="dores">${Object.entries(KB.cefaleias).map(([id,c])=>`
+    <button class="dor" data-dor="${id}" aria-pressed="${S.dor===id}"><b>${esc(c.nome)}</b><span>${esc(c.assinatura)}</span></button>`).join('')}</div>`;
+  return {titulo:'Qual é a dor?', sub:'Tudo o que vem depois se ajusta a esta escolha.', html, done:!!S.dor};
+}
+
+function stepCrit(){
+  const c = dor(); if(!c) return {titulo:'Critérios e sinais de alarme', locked:true};
+  const html = `
+    <div class="box"><h3>${esc(c.ichd)} · CID ${esc(c.cid)}</h3>
+      ${c.criterios.map((t,i)=>chk('crit',i,t,S.crit.has(i))).join('')}
+    </div>
+    <div class="box"><h3>Sinais de alarme (SNNOOP10)</h3>
+      ${KB.alarme.map((t,i)=>chk('alarme',i,t,S.alarme.has(i))).join('')}
+    </div>
+    ${S.alarme.size?`<div class="flag">Há sinal de alarme: a RM de crânio entra como exame obrigatório e o procedimento só depois de excluída causa secundária.</div>`:''}`;
+  return {titulo:'Critérios e sinais de alarme', sub:'Marque o que está documentado no prontuário.', html, done:S.crit.size===c.criterios.length};
+}
+
+function stepExames(){
+  const c = dor(); if(!c) return {titulo:'Exames de imagem', locked:true};
+  const ex = examesDoCaso();
+  const txt = textoExames(ex);
+  const html = `
+    <div class="box">${ex.map(e=>`
+      <div class="exame">
+        <div class="t">${esc(e.nome)} <span class="tuss">${esc(e.tuss)}</span></div>
+        <div class="meta">Quando: ${esc(e.quando)}</div>
+        <label class="chk"><input type="checkbox" data-laudo="${e.id}" ${S.laudo.has(e.id)?'checked':''}> Já tenho laudo recente</label>
+      </div>`).join('')}
+    </div>
+    <details><summary class="meta">Solicitação de exames (texto)</summary>
+      <pre class="out" id="o_ex">${esc(txt)}</pre>
+      <div class="actions"><button class="btn ghost" data-copy="o_ex">Copiar solicitação</button></div>
+    </details>`;
+  return {titulo:'Exames de imagem', sub:'Cada exame sai com código e justificativa, o que evita a glosa do próprio exame.', html, done:ex.every(e=>S.laudo.has(e.id) || isOpt(e))};
+}
+
+function stepProc(){
+  const c = dor(); if(!c) return {titulo:'Procedimento', locked:true};
+  const html = `<div class="procs">${['bloqueio','botox','rf'].map(id=>{
+    const p = c.proc[id], r = RISCO[p.risco], bloqueado = p.risco==='nao';
+    const extra = p.modalidade ? ` · ${esc(p.modalidade)}` : '';
+    return `<button class="proc" data-proc="${id}" aria-pressed="${S.proc===id}" ${bloqueado?'disabled':''}>
+      <span class="lamp" style="background:${r.cor}"></span>
+      <span><b>${esc(KB.procedimentos[id].nome)}${extra}</b>
+      <span class="risk" style="color:${r.cor}">${r.txt}</span><br><span class="n">${esc(p.nota)}</span></span>
+    </button>`;}).join('')}</div>`;
+  return {titulo:'Procedimento', sub:'O semáforo combina evidência, cobertura no Rol e histórico de auditoria.', html, done:!!S.proc};
+}
+
+function stepTeste(){
+  const B=KB.bloqueio_teste, T=S.teste, v=veredito(), alvos=B.alvos[S.dor];
+  const sem = T.semanas==='' ? 0 : Math.min(+T.semanas, B.observacao_max_sem);
+  const barras = Array.from({length:B.observacao_max_sem},(_,i)=>`<span class="${i<sem?'on':''}"></span>`).join('');
+  const opt = (arr,val) => arr.map(a=>`<option ${a===val?'selected':''}>${esc(a)}</option>`).join('');
+  const html = `
+    <div class="verd" style="border-left:5px solid ${v.cor}"><b style="color:${v.cor}">${esc(v.tit)}</b>${esc(v.txt)}</div>
+    <div class="box"><h3>1. Bloqueio teste</h3>
+      <div class="f2">
+        <label class="full">Alvo<select data-t="alvo"><option value="">Selecione…</option>${opt(alvos,T.alvo)}</select></label>
+        <label>Lado<select data-t="lado"><option value="">Selecione…</option>${opt(['Direito','Esquerdo','Bilateral'],T.lado)}</select></label>
+        <label class="full">Anestésico<select data-t="farm">${Object.entries(B.anestesicos).map(([k,a])=>`<option value="${k}" ${k===T.farm?'selected':''}>${esc(a.nome)}</option>`).join('')}</select></label>
+        <label>Data do bloqueio<input type="date" data-t="data" value="${esc(T.data)}"></label>
+        <label>Dor antes (0–10)<input type="number" min="0" max="10" inputmode="numeric" data-t="pre" value="${esc(T.pre)}"></label>
+        <label>Menor dor após (0–10)<input type="number" min="0" max="10" inputmode="numeric" data-t="min" value="${esc(T.min)}"></label>
+      </div>
+      <label class="chk"><input type="checkbox" data-tc="janela" ${T.janela?'checked':''}><span>Alívio mantido por pelo menos ${esc(B.anestesicos[T.farm].janela)} (janela do anestésico escolhido)</span></label>
+      <p class="meta">${esc(B.criterio_positivo)}</p>
+      <details><summary class="meta">Guia do bloqueio teste e ficha de dor para o paciente</summary>
+        <pre class="out" id="o_bt">${esc(textoGuiaTeste())}</pre>
+        <div class="actions"><button class="btn ghost" data-copy="o_bt">Copiar guia do bloqueio</button></div>
+        <pre class="out" id="o_ficha">${esc(textoFicha())}</pre>
+        <div class="actions"><button class="btn ghost" data-copy="o_ficha">Copiar ficha do paciente</button></div>
+      </details>
+    </div>
+    <div class="box"><h3>2. Observação com tratamento medicamentoso</h3>
+      <div class="f2">
+        <label>Semanas desde o bloqueio<input type="number" min="0" max="52" inputmode="numeric" data-t="semanas" value="${esc(T.semanas)}"></label>
+        <label>Dias de alívio<input type="number" min="0" max="365" inputmode="numeric" data-t="dias" value="${esc(T.dias)}"></label>
+      </div>
+      <div class="timeline" aria-hidden="true">${barras}</div>
+      <div class="tl-lab"><span>0</span><span>${B.observacao_min_sem} sem</span><span>${B.observacao_max_sem} sem</span></div>
+      <label class="chk"><input type="checkbox" data-tc="retorno" ${T.retorno?'checked':''}><span>A dor voltou apesar da medicação</span></label>
+      <p class="meta">${esc(B.nota_literatura)}</p>
+    </div>`;
+  return {titulo:'Bloqueio teste e observação', sub:'A radiofrequência pulsada só é liberada depois de um teste positivo com retorno da dor.', html, done:v.k==='indicada'};
+}
+function textoGuiaTeste(){
+  const c=dor(), T=S.teste, P=pac(), f=KB.bloqueio_teste.anestesicos[T.farm];
+  return [
+    `GUIA DE SOLICITAÇÃO DE PROCEDIMENTO — BLOQUEIO ANESTÉSICO TESTE`,
+    `Paciente: ${P.nome} | Operadora: ${P.op} | Carteirinha: ${P.cart}`, '',
+    `# DIAGNÓSTICO:`, `* ${c.nome} — ${c.ichd} — CID ${c.cid}`, '',
+    `# INDICAÇÃO:`, `Bloqueio anestésico com finalidade diagnóstica e terapêutica, pré-requisito para avaliação de radiofrequência pulsada do mesmo alvo. Será considerado positivo o alívio ≥50% da dor durante a ação do anestésico.`, '',
+    `# PROCEDIMENTO:`, `* ${T.alvo||'[alvo]'}${T.lado?' — '+T.lado.toLowerCase():''}`, '',
+    `# CÓDIGOS:`, ...KB.procedimentos.bloqueio.codigos.map(k=>`* ${k.tuss} — ${k.desc} — qtd.: ${k.qtd}`), '',
+    `# MATERIAIS:`, ...KB.procedimentos.bloqueio.materiais.map(m=>`* ${m}`), '',
+    `# MEDICAMENTOS:`, `* ${f.nome} — 1 unidade`, '',
+    `# CID:`, `* ${c.cid}`
+  ].join('\n');
+}
+function textoFicha(){
+  const P=pac();
+  return [
+    `FICHA DE DOR APÓS O BLOQUEIO — ${P.nome}`,
+    `Anote a dor de 0 (sem dor) a 10 (pior dor possível).`, '',
+    `Antes do bloqueio: ___`,
+    `30 minutos depois: ___`,
+    `1 hora depois: ___`,
+    `3 horas depois: ___`,
+    `24 horas depois: ___`, '',
+    `Quantos dias a melhora durou? ___`,
+    `Em que data a dor voltou? ___/___/______`,
+    `Remédios que tomou no período: ______________________`, '',
+    `Traga esta ficha na consulta de retorno.`
+  ].join('\n');
+}
+
+function stepDossie(){
+  const p = pd(); if(!p) return {titulo:'Dossiê do pedido', locked:true};
+  if(precisaTeste() && veredito().k==='indicada'){ p.check.forEach((t,i)=>{ if(/^Bloqueio teste positivo/.test(t)) S.dos.add(i); }); }
+  const tot = p.check.length, ok = S.dos.size, pct = Math.round(ok/tot*100);
+  const falta = tot-ok;
+  const msg = falta===0 ? 'Dossiê completo — pode gerar a guia.' : `Faltam ${falta} ${falta>1?'itens':'item'}: pedido incompleto é a principal causa de glosa evitável.`;
+  const html = `<div class="box">
+      ${p.check.map((t,i)=>chk('dos',i,t,S.dos.has(i))).join('')}
+      <div class="bar"><i style="width:${pct}%"></i></div>
+      <div class="ready" style="color:${falta?'var(--moderado-alto)':'var(--baixo)'}">${msg}</div>
+    </div>
+    ${p.alerta?`<div class="note">${esc(p.alerta)}</div>`:''}
+    ${pb().alerta_base?`<div class="note">${esc(pb().alerta_base)}</div>`:''}`;
+  return {titulo:'Dossiê do pedido', sub:'O que o auditor vai procurar, na ordem em que procura.', html, done:falta===0};
+}
+
+function stepGuia(){
+  const p = pd(); if(!p) return {titulo:'Guia: códigos, materiais e medicamentos', locked:true};
+  const cods = codigosDoCaso();
+  const txt = textoGuia();
+  const html = `
+    <div class="box"><h3>Códigos</h3>
+      ${cods.map(k=>`<div class="cod"><span class="tuss">${esc(k.tuss)}</span><span class="d">${esc(k.desc)}</span><span class="q">Qtd.: ${esc(k.qtd)}${k.ref?' · '+esc(k.ref):''}</span></div>`).join('')}
+    </div>
+    <div class="box"><h3>Remuneração legítima: o que não deixar de fora</h3>
+      <ul class="l legit">
+        <li>O código mais específico para o ato realizado${S.proc==='rf'&&S.dor==='trigemeo'?' (31404030, não o genérico 31403336)':''}.</li>
+        ${cods.some(k=>k.tuss==='40811026')?'<li>Radioscopia 40811026 por hora ou fração, anotando o tempo real.</li>':''}
+        <li>Quantidade por nervo, lado ou segmento, quando a operadora remunera assim.</li>
+        ${S.proc==='rf'?'<li>Sedação/anestesia e rotina pré-operatória solicitadas à parte.</li>':''}
+        <li>Tabela de valores por operadora preenchida no app: entre códigos igualmente corretos, ele sugere o de maior porte.</li>
+        <li class="no">Nunca: código neurolítico (31602134) em bloqueio só com anestésico/corticoide, nem código de outro procedimento.</li>
+      </ul>
+    </div>
+    <pre class="out" id="o_guia">${esc(txt)}</pre>
+    <div class="actions"><button class="btn" data-copy="o_guia">Copiar guia</button></div>`;
+  return {titulo:'Guia: códigos, materiais e medicamentos', sub:'Texto no padrão das seções da Guia IN NEURO.', html, done:true};
+}
+
+function stepRelatorio(){
+  const p = pd(); if(!p) return {titulo:'Relatório de justificativa técnica', locked:true};
+  const txt = textoRelatorio();
+  const html = `<pre class="out" id="o_rel">${esc(txt)}</pre>
+    <div class="actions"><button class="btn" data-copy="o_rel">Copiar relatório</button></div>`;
+  return {titulo:'Relatório de justificativa técnica', sub:'Anexo da guia, com as referências fixas do caso.', html, done:true};
+}
+
+function stepGlosa(){
+  const p = pd(); if(!p) return {titulo:'Se houver negativa', locked:true};
+  const opts = Object.entries(KB.glosas).map(([id,g])=>`<option value="${id}" ${S.glosa===id?'selected':''}>${esc(g.nome)}</option>`).join('');
+  let corpo = '';
+  if(S.glosa){
+    const g = KB.glosas[S.glosa];
+    const interno = (S.glosa==='fora_rol' && g.interno && (S.proc==='botox' && S.dor==='enxaqueca')) ? `<div class="flag">${esc(g.interno)}</div>` : '';
+    corpo = `${interno}
+      <div class="box"><h3>1. Reanálise na Ouvidoria (o senhor envia)</h3></div>
+      <pre class="out" id="o_ouv">${esc(textoOuvidoria())}</pre>
+      <div class="actions"><button class="btn" data-copy="o_ouv">Copiar pedido de reanálise</button></div>
+      <div class="box"><h3>2. Se mantida: NIP (o paciente registra)</h3>
+        <ul class="l"><li>Portal da ANS ou Disque ANS 0800 701 9656.</li><li>Guardar o número da NIP.</li><li>NIP assistencial: a operadora tem até 5 dias úteis.</li></ul>
+      </div>
+      <pre class="out" id="o_nip">${esc(textoNIP())}</pre>
+      <div class="actions"><button class="btn" data-copy="o_nip">Copiar texto da NIP</button></div>
+      <div class="note">Se a NIP não resolver, o dossiê já está montado nos 5 requisitos da ADI 7265 para o jurídico.</div>`;
+  }
+  const html = `<label class="meta" for="glosa">Motivo alegado pela operadora</label>
+    <select id="glosa"><option value="">Selecione…</option>${opts}</select>${corpo}`;
+  return {titulo:'Se houver negativa', sub:'Negativa por escrito (RN 623/2024) → Ouvidoria → NIP → jurídico.', html, done:!!S.glosa};
+}
+
+function chk(grupo,i,t,on){
+  return `<label class="chk"><input type="checkbox" data-g="${grupo}" data-i="${i}" ${on?'checked':''}><span>${esc(t)}</span></label>`;
+}
+
+/* ---------- Textos gerados ---------- */
+function refsCurta(){ return (pd()?.refs||[]).map(r=>CURTA[r]||r).join('; '); }
+function refsLonga(){ return (pd()?.refs||[]).map((r,i)=>`${i+1}. ${KB.referencias[r]}`).join('\n'); }
+function codLinha(){ return codigosDoCaso().map(k=>`${k.tuss} (${k.desc})`).join(' + '); }
+
+function textoExames(ex){
+  const c=dor(), P=pac();
+  return `SOLICITAÇÃO DE EXAMES\nPaciente: ${P.nome} | Operadora: ${P.op} | Carteirinha: ${P.cart}\n\n`+
+    ex.map(e=>`* ${e.nome}${isOpt(e)?' (se indicado)':''} — TUSS ${e.tuss}\n  Indicação: ${e.just}\n  Hipótese: ${c.nome} (${c.ichd}) — CID ${c.cid}`).join('\n\n');
+}
+function textoGuia(){
+  const c=dor(), p=pd(), P=pac();
+  const crit = c.criterios.filter((_,i)=>S.crit.has(i));
+  const ex = examesDoCaso();
+  return [
+    `GUIA DE SOLICITAÇÃO DE PROCEDIMENTO — ${KB.procedimentos[S.proc].nome.toUpperCase()}`,
+    `Paciente: ${P.nome} | Operadora: ${P.op} | Carteirinha: ${P.cart}`, '',
+    `# DIAGNÓSTICO:`, `* ${c.nome} — ${c.ichd} — CID ${c.cid}`, '',
+    `# CRITÉRIOS DIAGNÓSTICOS ATENDIDOS:`, ...(crit.length?crit.map(t=>`* ${t}`):['* [marcar na etapa 2]']), '',
+    `# EXAMES COMPLEMENTARES:`, ...ex.filter(e=>S.laudo.has(e.id)||!isOpt(e)).map(e=>`* ${e.nome}${S.laudo.has(e.id)?' — laudo anexo':' — solicitado'}`), '',
+    `# TRATAMENTOS PRÉVIOS:`, `* [medicamento — dose — período — desfecho]`, '',
+    `# INDICAÇÃO:`, ...(frasesTeste()?[frasesTeste()]:[]), p.racional, '',
+    `# PROCEDIMENTO:`, `* ${p.alvo || p.nervos || ''}${p.modalidade?' — técnica: radiofrequência '+p.modalidade.toLowerCase():''}`, '',
+    `# CÓDIGOS:`, ...codigosDoCaso().map(k=>`* ${k.tuss} — ${k.desc} — qtd.: ${k.qtd}`), '',
+    `# MATERIAIS:`, ...materiaisDoCaso().map(m=>`* ${m}`), '',
+    `# MEDICAMENTOS:`, ...medsDoCaso().map(m=>`* ${m}`), '',
+    `# CID:`, `* ${c.cid}`
+  ].join('\n');
+}
+function textoRelatorio(){
+  const c=dor(), p=pd(), P=pac();
+  const crit = c.criterios.filter((_,i)=>S.crit.has(i));
+  const dos = p.check.filter((_,i)=>S.dos.has(i));
+  return [
+    `RELATÓRIO MÉDICO — JUSTIFICATIVA TÉCNICA`, '',
+    `Paciente ${P.nome}, beneficiário(a) da ${P.op} (carteirinha ${P.cart}), em acompanhamento neurocirúrgico por ${c.nome.toLowerCase()} (${c.ichd}; CID ${c.cid}).`, '',
+    crit.length ? `O quadro preenche os critérios diagnósticos: ${crit.join('; ').toLowerCase()}.` : `[Descrever os critérios diagnósticos atendidos.]`, '',
+    dos.length ? `Documentação que acompanha o pedido: ${dos.join('; ').toLowerCase()}.` : `[Completar o dossiê.]`, '',
+    ...(frasesTeste()?[frasesTeste(), '']:[]),
+    p.racional, '',
+    `Diante do exposto, solicito autorização para ${KB.procedimentos[S.proc].nome.toLowerCase()} — ${codLinha()}.`, '',
+    `Referências:`, refsLonga(), '',
+    `${KB.meta.medico.nome} — Neurocirurgião — ${KB.meta.medico.crm} — ${KB.meta.medico.rqe}`
+  ].join('\n');
+}
+function preencher(t){
+  const c=dor();
+  return t.replaceAll('{dx}', c.nome.toLowerCase()).replaceAll('{cid}', c.cid).replaceAll('{refs}', refsCurta());
+}
+function textoOuvidoria(){
+  const c=dor(), p=pd(), P=pac(), g=KB.glosas[S.glosa];
+  return [
+    `À Ouvidoria da ${P.op}`,
+    `Pedido de reanálise de negativa de cobertura (RN ANS 623/2024)`, '',
+    `Paciente: ${P.nome} — Carteirinha: ${P.cart}`,
+    `Protocolo: ${P.prot} — Negativa em: ${P.data}`,
+    `Procedimento: ${KB.procedimentos[S.proc].nome} — ${codLinha()}`,
+    `Diagnóstico: ${c.nome} (${c.ichd}; CID ${c.cid})`, '',
+    preencher(g.ouvidoria), '',
+    `Indicação clínica: ${p.racional}`, '',
+    `Requer-se a reanálise do pedido, com resposta por escrito e fundamentada, nos termos da RN ANS 623/2024.`, '',
+    `${KB.meta.medico.nome} — Neurocirurgião — ${KB.meta.medico.crm} — ${KB.meta.medico.rqe}`
+  ].join('\n');
+}
+function textoNIP(){
+  const c=dor(), P=pac(), g=KB.glosas[S.glosa];
+  return `Sou beneficiário(a) da ${P.op}, carteirinha ${P.cart}. Em ${P.sol}, meu médico assistente, ${KB.meta.medico.nome} (${KB.meta.medico.crm}), solicitou autorização para ${KB.procedimentos[S.proc].nome.toLowerCase()} para tratamento de ${c.nome.toLowerCase()}. Em ${P.data} a operadora negou o pedido (protocolo ${P.prot}): ${g.nip}. Pedi reanálise à Ouvidoria e a negativa foi mantida. Solicito a intermediação da ANS para que o procedimento seja autorizado.\n\nTenho em mãos: pedido e relatório do médico, negativa por escrito da operadora e exames.`;
+}
+
+/* ---------- Eventos ---------- */
+function bind(){
+  document.querySelectorAll('[data-dor]').forEach(b=>b.onclick=()=>{
+    if(S.dor!==b.dataset.dor){ S.dor=b.dataset.dor; S.crit.clear(); S.laudo.clear(); S.proc=null; S.dos.clear(); S.glosa=''; S.teste=novoTeste(); }
+    render();
+  });
+  document.querySelectorAll('[data-proc]').forEach(b=>b.onclick=()=>{
+    if(S.proc!==b.dataset.proc){ S.proc=b.dataset.proc; S.dos.clear(); S.glosa=''; S.teste=novoTeste(); }
+    render();
+  });
+  document.querySelectorAll('input[data-g]').forEach(i=>i.onchange=()=>{
+    const set = {crit:S.crit, alarme:S.alarme, dos:S.dos}[i.dataset.g];
+    const n = +i.dataset.i; i.checked ? set.add(n) : set.delete(n); render();
+  });
+  document.querySelectorAll('input[data-laudo]').forEach(i=>i.onchange=()=>{
+    i.checked ? S.laudo.add(i.dataset.laudo) : S.laudo.delete(i.dataset.laudo); render();
+  });
+  document.querySelectorAll('[data-t]').forEach(el=>el.onchange=()=>{ S.teste[el.dataset.t]=el.value; render(); });
+  document.querySelectorAll('[data-tc]').forEach(el=>el.onchange=()=>{ S.teste[el.dataset.tc]=el.checked; render(); });
+  const g=$('glosa'); if(g) g.onchange=()=>{ S.glosa=g.value; render(); };
+  document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copiar($(b.dataset.copy).textContent));
+}
+function copiar(t){
+  const ok=()=>toast('Copiado');
+  if(navigator.clipboard) navigator.clipboard.writeText(t).then(ok,()=>fallback(t));
+  else fallback(t);
+}
+function fallback(t){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); try{document.execCommand('copy');toast('Copiado');}catch(e){toast('Selecione e copie manualmente');} a.remove(); }
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); setTimeout(()=>t.classList.remove('on'),1400); }
+['p_nome','p_op','p_cart','p_prot','p_data','p_sol'].forEach(id=>$(id).addEventListener('input',()=>{ if(S.dor) render(); }));
+
+$('foot').textContent = `Base v${KB.meta.versao} (${KB.meta.data}). ${KB.meta.aviso}`;
+render();
+</script>
+</body>
+</html>
