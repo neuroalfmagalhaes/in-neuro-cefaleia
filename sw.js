@@ -1,4 +1,4 @@
-const CACHE_NAME = 'in-neuro-cefaleia-v1';
+const CACHE_NAME = 'in-neuro-cefaleia-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -8,7 +8,11 @@ self.addEventListener('install', (event) => {
       './manifest.json',
       './data/algoritmo.json',
       './icon-192.png',
-      './icon-512.png'
+      './icon-512.png',
+      './assets/logo.png',
+      './assets/marca-dagua.png',
+      // jsPDF: sem isto em cache, não há como gerar PDF offline.
+      'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
     ]))
   );
   self.skipWaiting();

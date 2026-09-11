@@ -8,6 +8,9 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<!-- async: o algoritmo não depende do jsPDF para funcionar. Se o CDN estiver
+     fora do ar, o app abre normalmente e só os botões de PDF avisam. -->
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   /* Design system herdado do IN NEURO Rotina Cirúrgica (V6) */
   :root {
@@ -182,6 +185,10 @@
   .st.loading { color: var(--teal); font-weight: 600; }
   .st.error { color: #b23; font-weight: 600; }
   .st.ok { color: #1a7d3a; font-weight: 600; }
+  .achado {
+    background: var(--gold-soft); border: 1px solid #e3d3bf; border-radius: 8px;
+    padding: 7px 10px; font-size: 13px; margin: 6px 0; color: #5a4526;
+  }
   .trat-item { border-top: 1px solid var(--border); padding: 12px 0 6px; }
   .trat-item:first-of-type { border-top: 0; padding-top: 0; }
   button.btn.mini { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
@@ -332,7 +339,8 @@ const S = {
   dor: null,
   crit: new Set(), alarme: new Set(), laudo: new Set(),
   proc: null, dos: new Set(), glosa: '',
-  teste: novoTeste()
+  teste: novoTeste(),
+  endereco: 'vinci'
 };
 function novoTeste(){ return {alvo:'', lado:'', farm:'lidocaina', data:'', pre:'', min:'', janela:false, retorno:false, dias:'', semanas:''}; }
 
@@ -391,6 +399,26 @@ function examesDoCaso(){
   return lista.map(e => ({...e, ...KB.exames[e.id]}));
 }
 const isOpt = e => /Opcional|Apenas|Se o serviço|Suspeita/.test(e.quando);
+
+/* Procura, no que a IA leu do prontuário, a linha que fala deste exame.
+   Serve só para MOSTRAR ao médico: quem marca "já tenho laudo" é ele.
+   Casar nome de exame automaticamente é adivinhação, e um erro viraria
+   "laudo anexo" de um laudo que não existe. */
+function achadoDoProntuario(exame){
+  const linhas = (S.clin.examescompl||'').split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!linhas.length) return '';
+  const limpar = s => s.toLowerCase()
+    .normalize('NFD').replace(/[^ -~]/g,'')
+    .replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+  const regiao = limpar(exame.nome).split(' ').filter(p => p.length > 3);
+  let melhor = '', pontos = 0;
+  linhas.forEach(l=>{
+    const alvo = limpar(l);
+    const n = regiao.filter(p => alvo.includes(p)).length;
+    if(n > pontos){ pontos = n; melhor = l; }
+  });
+  return pontos >= 2 ? melhor : '';
+}
 function codigosDoCaso(){ const p=pd(); return (p && p.codigos) ? p.codigos : (pb() ? pb().codigos : []); }
 function materiaisDoCaso(){ return [...(pb()?.materiais||[]), ...(pd()?.materiais_extra||[])]; }
 function medsDoCaso(){ return pd()?.medicamentos || pb()?.medicamentos || []; }
@@ -452,16 +480,23 @@ function stepExames(){
   const ex = examesDoCaso();
   const txt = textoExames(ex);
   const html = `
-    <div class="box">${ex.map(e=>`
+    <div class="box">${ex.map(e=>{
+      const achado = achadoDoProntuario(e);
+      return `
       <div class="exame">
         <div class="t">${pend(e.nome)} <span class="tuss">${pend(e.tuss)}</span></div>
         <div class="meta">Quando: ${esc(e.quando)}</div>
+        ${achado?`<div class="achado"><b>No prontuário:</b> ${esc(achado)}</div>`:''}
         <label class="chk"><input type="checkbox" data-laudo="${e.id}" ${S.laudo.has(e.id)?'checked':''}> Já tenho laudo recente</label>
-      </div>`).join('')}
+      </div>`;}).join('')}
     </div>
-    <details><summary class="meta">Solicitação de exames (texto)</summary>
+    ${seletorEndereco()}
+    <div class="actions">
+      <button class="btn" data-pdf="exames">Gerar Solicitação em PDF</button>
+      <button class="btn ghost" data-copy="o_ex">Copiar texto</button>
+    </div>
+    <details><summary class="meta">Ver o texto da solicitação</summary>
       <pre class="out" id="o_ex">${pend(txt)}</pre>
-      <div class="actions"><button class="btn ghost" data-copy="o_ex">Copiar solicitação</button></div>
     </details>`;
   return {titulo:'Exames de imagem', sub:'Cada exame sai com código e justificativa, o que evita a glosa do próprio exame.', html, done:ex.every(e=>S.laudo.has(e.id) || isOpt(e))};
 }
@@ -582,7 +617,11 @@ function stepGuia(){
       </ul>
     </div>
     <pre class="out" id="o_guia">${pend(txt)}</pre>
-    <div class="actions"><button class="btn" data-copy="o_guia">Copiar guia</button></div>`;
+    ${seletorEndereco()}
+    <div class="actions">
+      <button class="btn" data-pdf="guia">Gerar Guia em PDF</button>
+      <button class="btn ghost" data-copy="o_guia">Copiar texto</button>
+    </div>`;
   return {titulo:'Guia: códigos, materiais e medicamentos', sub:'Texto no padrão das seções da Guia IN NEURO.', html, done:true};
 }
 
@@ -590,7 +629,10 @@ function stepRelatorio(){
   const p = pd(); if(!p) return {titulo:'Relatório de justificativa técnica', locked:true};
   const txt = textoRelatorio();
   const html = `<pre class="out" id="o_rel">${pend(txt)}</pre>
-    <div class="actions"><button class="btn" data-copy="o_rel">Copiar relatório</button></div>`;
+    <div class="actions">
+      <button class="btn" data-pdf="relatorio">Gerar Relatório em PDF</button>
+      <button class="btn ghost" data-copy="o_rel">Copiar texto</button>
+    </div>`;
   return {titulo:'Relatório de justificativa técnica', sub:'Anexo da guia, com as referências fixas do caso.', html, done:true};
 }
 
@@ -621,6 +663,14 @@ function chk(grupo,i,t,on){
   return `<label class="chk"><input type="checkbox" data-g="${grupo}" data-i="${i}" ${on?'checked':''}><span>${pend(t)}</span></label>`;
 }
 
+/* Endereço do rodapé do PDF: escolhido por botão, nunca digitado. */
+function seletorEndereco(){
+  const op = (v,r) => `<label><input type="radio" name="end" value="${v}" ${S.endereco===v?'checked':''}><span>${r}</span></label>`;
+  return `<div class="box"><h3>Endereço no rodapé</h3>
+    <div class="addr-choice">${op('vinci','Vinci Medical Offices')}${op('floriano','Clínica Floriano')}</div>
+  </div>`;
+}
+
 /* ---------- Textos gerados ---------- */
 function refsCurta(){ return (pd()?.refs||[]).map(r=>CURTA[r]||r).join('; '); }
 function refsLonga(){ return (pd()?.refs||[]).map((r,i)=>`${i+1}. ${KB.referencias[r]}`).join('\n'); }
@@ -642,7 +692,11 @@ function textoGuia(){
     `# HISTÓRIA DA DOENÇA ATUAL:`, S.clin.hda.trim() || `* [preencher na etapa 0]`, '',
     `# EXAME NEUROLÓGICO:`, S.clin.exame.trim() || `* [preencher na etapa 0]`, '',
     `# CRITÉRIOS DIAGNÓSTICOS ATENDIDOS:`, ...(crit.length?crit.map(t=>`* ${t}`):['* [marcar na etapa 2]']), '',
-    `# EXAMES COMPLEMENTARES:`, ...ex.filter(e=>S.laudo.has(e.id)||!isOpt(e)).map(e=>`* ${e.nome}${S.laudo.has(e.id)?' — laudo anexo':' — solicitado'}`), '',
+    `# EXAMES COMPLEMENTARES:`, ...ex.filter(e=>S.laudo.has(e.id)||!isOpt(e)).map(e=>{
+      if(!S.laudo.has(e.id)) return `* ${e.nome} — solicitado`;
+      const achado = achadoDoProntuario(e);
+      return `* ${e.nome} — laudo anexo${achado ? ': ' + achado : ''}`;
+    }), '',
     `# TRATAMENTOS PRÉVIOS:`, ...linhasTratPrevios(), '',
     `# INDICAÇÃO:`, ...(frasesTeste()?[frasesTeste()]:[]), p.racional, '',
     `# PROCEDIMENTO:`, `* ${p.alvo || p.nervos || ''}${p.modalidade?' — técnica: radiofrequência '+p.modalidade.toLowerCase():''}`, '',
@@ -729,6 +783,11 @@ function bind(){
   document.querySelectorAll('[data-tc]').forEach(el=>el.onchange=()=>{ S.teste[el.dataset.tc]=el.checked; render(); });
   const g=$('glosa'); if(g) g.onchange=()=>{ S.glosa=g.value; render(); };
   document.querySelectorAll('[data-copy]').forEach(b=>b.onclick=()=>copiar($(b.dataset.copy).textContent));
+  document.querySelectorAll('input[name=end]').forEach(r=>r.onchange=()=>{
+    S.endereco = r.value; salvar(); render();
+  });
+  const PDFS = { guia: gerarGuiaPDF, relatorio: gerarRelatorioPDF, exames: gerarExamesPDF };
+  document.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>PDFS[b.dataset.pdf]());
 }
 function copiar(t){
   const ok=()=>toast('Copiado');
@@ -738,13 +797,406 @@ function copiar(t){
 function fallback(t){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); try{document.execCommand('copy');toast('Copiado');}catch(e){toast('Selecione e copie manualmente');} a.remove(); }
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
+/* =====================================================================
+   MÓDULO PDF — copiado do IN NEURO Rotina Cirúrgica (V6, index.html:427-558).
+   Layout idêntico ao da Guia Cirúrgica: moldura tripla, marca d'água,
+   cabeçalho e rodapé. Não alterar sem autorização explícita.
+   ===================================================================== */
+
+const TEAL = [9, 45, 103];
+const GRAY = [68, 68, 68];
+
+const ENDERECOS = {
+  vinci: ["VINCI MEDICAL OFFICES: Rua Dr. Orlando Feirabend Filho, 230 - Torre C - 2° andar - Sala 201",
+          "Parque Residencial Aquarius - São José dos Campos, SP - CEP: 12246-190"],
+  floriano: ["CLÍNICA FLORIANO: Avenida Marechal Floriano Peixoto, 331",
+             "São José dos Campos, SP - CEP: 12210-030"]
+};
+const RODAPE2 = "IN NEURO Assistência Médica LTDA --- CNPJ: 24.403.242/0001-94 --- Telefone: (11) 94121 2778";
+const RODAPE3 = "EMAIL: suporte@neuroalfmagalhaes.com";
+
+const MEDICO_NOME = "Dr. ALFREDO DAS NEVES MAGALHÃES FERNANDES";
+const MEDICO_REG  = "NEUROCIRURGIÃO --- CREMESP: 135506   RQE: 72972";
+
+function agora(){
+  const d = new Date(), z = n => String(n).padStart(2,'0');
+  return `${z(d.getDate())}/${z(d.getMonth()+1)}/${d.getFullYear()} - ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())} (GMT-3)`;
+}
+
+/* Logo e marca d'água: no V6 são base64 dentro do HTML. Aqui são arquivos,
+   carregados uma vez. Os bytes são os mesmos — o PDF sai igual. */
+const ASSETS = { logo:null, marca:null, logoLado:0, marcaW:0, marcaH:0 };
+async function carregarAssets(){
+  const ler = async (url) => {
+    const r = await fetch(url);
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob();
+    const dataUrl = await new Promise((res,rej)=>{
+      const f = new FileReader(); f.onload=()=>res(f.result); f.onerror=rej; f.readAsDataURL(blob);
+    });
+    const dim = await new Promise((res)=>{
+      const im = new Image(); im.onload=()=>res({w:im.width,h:im.height}); im.onerror=()=>res({w:0,h:0}); im.src=dataUrl;
+    });
+    return { dataUrl, ...dim };
+  };
+  try { const l = await ler('assets/logo.png'); ASSETS.logo = l.dataUrl; ASSETS.logoLado = l.w; }
+  catch(e) { console.warn('logo não carregado', e); }
+  try { const m = await ler('assets/marca-dagua.png'); ASSETS.marca = m.dataUrl; ASSETS.marcaW = m.w; ASSETS.marcaH = m.h; }
+  catch(e) { console.warn('marca d\'água não carregada', e); }
+}
+
+function desenharMoldura(doc){
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+  doc.setDrawColor(...TEAL); doc.setLineWidth(2.0);
+  doc.rect(8, 8, w - 16, h - 16);
+  doc.setDrawColor(184, 146, 106); doc.setLineWidth(0.5);
+  doc.rect(10.5, 10.5, w - 21, h - 21);
+  doc.setDrawColor(...TEAL); doc.setLineWidth(0.35);
+  doc.rect(12, 12, w - 24, h - 24);
+}
+
+function desenharMarcaDagua(doc){
+  if(!ASSETS.marca) return;
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+  const larg = 150, alt = ASSETS.marcaW ? larg * (ASSETS.marcaH / ASSETS.marcaW) : 150;
+  try {
+    doc.saveGraphicsState();
+    doc.setGState(new doc.GState({opacity: 0.06}));
+    doc.addImage(ASSETS.marca, 'PNG', (w - larg)/2, (h - alt)/2, larg, alt);
+    doc.restoreGraphicsState();
+  } catch(e) { /* ignora se GState não suportado */ }
+}
+
+function desenharRodape(doc, y, endereco){
+  const w = doc.internal.pageSize.getWidth();
+  doc.setDrawColor(153); doc.setLineWidth(0.5);
+  doc.line(15, y, w - 15, y);
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(0);
+  let ty = y + 5;
+  doc.text("* " + ENDERECOS[endereco][0], w / 2, ty, {align: 'center'}); ty += 4;
+  doc.text(ENDERECOS[endereco][1], w / 2, ty, {align: 'center'}); ty += 7;
+  doc.setFont('helvetica', 'normal');
+  doc.text("* " + RODAPE2, w / 2, ty, {align: 'center'}); ty += 4;
+  doc.text(RODAPE3, w / 2, ty, {align: 'center'});
+}
+
+function desenharCabecalhoMedico(doc, y){
+  const w = doc.internal.pageSize.getWidth();
+  // O V6 desenha o logo em 60 x 25,6 mm (proporção do logo antigo, largo) e
+  // achata o símbolo quadrado atual. Aqui vai na proporção real.
+  if(ASSETS.logo){
+    const lado = 32;
+    doc.addImage(ASSETS.logo, 'PNG', w/2 - lado/2, y, lado, lado);
+    y += lado + 8;
+  } else {
+    y += 8;
+  }
+  doc.setFont('helvetica', 'bolditalic'); doc.setFontSize(15); doc.setTextColor(...TEAL);
+  doc.text(MEDICO_NOME, w/2, y, {align: 'center'});
+  y += 7;
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...GRAY);
+  doc.text(MEDICO_REG, w/2, y, {align: 'center'});
+  return y + 10;
+}
+
+/* Divide a linha em trechos normais e em negrito: o rótulo antes dos dois
+   pontos e, sobretudo, os itens [confirmar] / [PREENCHER], que nunca podem
+   passar despercebidos no documento. */
+function segmentos(linha, comRotulo){
+  const marcas = [];
+  let m;
+  const re = new RegExp(PEND.source, 'g');
+  while((m = re.exec(linha)) !== null) marcas.push([m.index, m.index + m[0].length]);
+  if(comRotulo){
+    const r = linha.match(/^[^:]{1,40}:/);
+    if(r) marcas.unshift([0, r[0].length]);
+  }
+  if(!marcas.length) return [{txt: linha, negrito: false}];
+
+  marcas.sort((a,b)=>a[0]-b[0]);
+  const segs = []; let pos = 0;
+  marcas.forEach(([ini,fim])=>{
+    if(ini < pos) return;
+    if(ini > pos) segs.push({txt: linha.slice(pos, ini), negrito: false});
+    segs.push({txt: linha.slice(ini, fim), negrito: true});
+    pos = fim;
+  });
+  if(pos < linha.length) segs.push({txt: linha.slice(pos), negrito: false});
+  return segs;
+}
+
+function larguraSegs(doc, segs, estilo){
+  return segs.reduce((s,g)=>{
+    doc.setFont('helvetica', g.negrito ? 'bold' : estilo);
+    return s + doc.getTextWidth(g.txt);
+  }, 0);
+}
+
+/* Escreve uma linha já quebrada, alternando normal e negrito.
+   align 'right' precisa da largura total para achar o ponto de partida. */
+function escreverLinha(doc, linha, x, y, estilo, align){
+  const segs = segmentos(seguroPdf(linha), estilo === 'ident');
+  const base = estilo === 'ident' ? 'normal' : estilo;
+  let cx = align === 'right' ? x - larguraSegs(doc, segs, base) : x;
+  segs.forEach(g=>{
+    doc.setFont('helvetica', g.negrito ? 'bold' : base);
+    doc.text(g.txt, cx, y);
+    cx += doc.getTextWidth(g.txt);
+  });
+  doc.setFont('helvetica', base);
+}
+
+function desenharIdentificacao(doc, y, d){
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(0);
+  const esq = [`Nome: ${d.nome || ''}`];
+  if(d.cpf) esq.push(`CPF: ${d.cpf}`);
+  if(d.nasc) esq.push(`Data de nascimento: ${d.nasc}`);
+  if(d.convenio) esq.push(`Convênio: ${d.convenio}`);
+  if(d.carteirinha) esq.push(`Nº da carteirinha: ${d.carteirinha}`);
+  if(d.telefone) esq.push(`Telefone: ${d.telefone}`);
+  if(d.email) esq.push(`E-mail: ${d.email}`);
+  if(d.enderecoPaciente) esq.push(`Endereço: ${d.enderecoPaciente}`);
+  const dir = [`Data e hora: ${agora()}`];
+  if(d.plano) dir.push(`Plano: ${d.plano}`);
+  if(d.acomodacao) dir.push(`Acomodação: ${d.acomodacao}`);
+  if(d.ans) dir.push(`Registro ANS: ${d.ans}`);
+
+  let yy = y;  esq.forEach(l => { escreverLinha(doc, l, 15, yy, 'ident'); yy += 5; });
+  let yy2 = y; dir.forEach(l => { escreverLinha(doc, l, 195, yy2, 'ident', 'right'); yy2 += 5; });
+  return Math.max(yy, yy2) + 6;
+}
+
+/* As fontes embutidas do jsPDF (Helvetica/WinAnsi) não têm travessão nem o
+   sinal de maior-ou-igual: o caractere some do PDF sem erro nenhum. Testado
+   caractere a caractere — os acentos do português passam, estes três não.
+   Perder o "≥" é o mais grave: "≥15 dias de cefaleia" viraria "15 dias", e o
+   auditor leria como exatamente 15. A troca é só na renderização do PDF; na
+   tela e no texto copiável os caracteres originais continuam. */
+const TROCA_PDF = {
+  '—':'-', '–':'-', '−':'-', '•':'-',
+  '≥':'>=', '≤':'<=',
+  '…':'...', ' ':' ',
+  '‘':"'", '’':"'", '“':'"', '”':'"',
+  // A tabela de larguras do jsPDF da 530/1000 para ½, mas a Helvetica usa
+  // 834: o trecho seguinte da linha comecava 3,2 pt a esquerda e encavalava.
+  '¼':'1/4', '½':'1/2', '¾':'3/4'
+};
+const RE_TROCA = new RegExp('[' + Object.keys(TROCA_PDF).join('') + ']', 'g');
+const seguroPdf = s => String(s).replace(RE_TROCA, c => TROCA_PDF[c]);
+
+function quebrarTexto(doc, texto, largura){ return doc.splitTextToSize(seguroPdf(texto), largura); }
+
+function checarQuebraPagina(doc, y, margemInferior){
+  const h = doc.internal.pageSize.getHeight();
+  if(y > h - margemInferior){
+    doc.addPage();
+    desenharMoldura(doc);
+    desenharMarcaDagua(doc);
+    return 20;
+  }
+  return y;
+}
+
+/* O V6 checa a quebra do título e das linhas separadamente, e o título pode
+   ficar órfão no pé da página. Aqui o título e a primeira linha são medidos
+   juntos — o BRIEFING exige que a seção nunca se separe dos seus itens. */
+function desenharSecao(doc, y, titulo, linhas, bullet){
+  const h = doc.internal.pageSize.getHeight();
+  const uteis = linhas.filter(l => l && l.trim());
+  if(y + 6 + (uteis.length ? 5 : 0) > h - 60){
+    doc.addPage(); desenharMoldura(doc); desenharMarcaDagua(doc); y = 20;
+  }
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(0);
+  doc.text(seguroPdf(titulo), 15, y); y += 6;
+  // Voltar para 'normal' ANTES de quebrar: splitTextToSize mede com a fonte
+  // corrente, e medir em negrito quebraria as linhas mais cedo do que o devido.
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
+  uteis.forEach(linha => {
+    quebrarTexto(doc, (bullet ? bullet + " " : "") + linha, 180).forEach(w => {
+      y = checarQuebraPagina(doc, y, 60);
+      escreverLinha(doc, w, 15, y, 'normal'); y += 5;
+    });
+  });
+  return y + 4;
+}
+
+function desenharParagrafo(doc, y, texto){
+  if(!texto) return y;
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(0);
+  quebrarTexto(doc, texto, 180).forEach(w => {
+    y = checarQuebraPagina(doc, y, 60);
+    escreverLinha(doc, w, 15, y, 'normal'); y += 5.5;
+  });
+  return y + 3;
+}
+
+/* Espaço em branco para a assinatura digital (Bird ID / Gov.br): sem linha e
+   sem texto, por decisão do Dr. Alfredo. */
+function desenharAssinaturaERodape(doc, y, endereco, alturaAssinatura){
+  const h = doc.internal.pageSize.getHeight();
+  const alt = alturaAssinatura || 30;
+  if(y > h - 60 - alt){
+    doc.addPage(); desenharMoldura(doc); desenharMarcaDagua(doc); y = 20;
+  }
+  y += 4 + alt + 6;
+  desenharRodape(doc, y, endereco);
+}
+
+function numerarPaginas(doc){
+  const n = doc.getNumberOfPages();
+  if(n < 2) return;
+  const w = doc.internal.pageSize.getWidth();
+  const h = doc.internal.pageSize.getHeight();
+  for(let i = 1; i <= n; i++){
+    doc.setPage(i);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRAY);
+    doc.text(`Página ${i} de ${n}`, w - 15, h - 15, {align: 'right'});
+  }
+}
+
+function tituloSublinhado(doc, y, textoBruto){
+  const texto = seguroPdf(textoBruto);
+  const w = doc.internal.pageSize.getWidth();
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(0);
+  doc.text(texto, w/2, y, {align: 'center'});
+  doc.setLineWidth(0.3);
+  const tw = doc.getTextWidth(texto);
+  doc.line(w/2 - tw/2, y+1, w/2 + tw/2, y+1);
+  return y + 12;
+}
+
+function novoDoc(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4'});
+  desenharMoldura(doc); desenharMarcaDagua(doc);
+  return doc;
+}
+
+/* ---------- Do texto para o PDF ----------
+   Os geradores não reescrevem nada: consomem o mesmo texto de textoGuia() e
+   textoRelatorio(), já verificado contra o protótipo. Assim o PDF e o texto
+   copiável nunca divergem. */
+function blocosDoTexto(texto){
+  const linhas = texto.split('\n');
+  const inicio = linhas.findIndex(l => l.startsWith('# '));
+  const blocos = [];
+  if(inicio === -1){
+    // Sem seções (relatório): parágrafos separados por linha em branco.
+    let buf = [];
+    linhas.forEach(l=>{
+      if(l.trim()) buf.push(l);
+      else if(buf.length){ blocos.push({tipo:'paragrafo', texto:buf.join(' ')}); buf = []; }
+    });
+    if(buf.length) blocos.push({tipo:'paragrafo', texto:buf.join(' ')});
+    return blocos;
+  }
+  let atual = null;
+  linhas.slice(inicio).forEach(l=>{
+    if(l.startsWith('# ')){
+      atual = {tipo:'secao', titulo:l, linhas:[]};
+      blocos.push(atual);
+    } else if(atual && l.trim()){
+      atual.linhas.push(l);
+    }
+  });
+  return blocos;
+}
+
+function desenharBlocos(doc, y, blocos){
+  blocos.forEach(b=>{
+    if(b.tipo === 'secao') y = desenharSecao(doc, y, b.titulo, b.linhas);
+    else y = desenharParagrafo(doc, y, b.texto);
+  });
+  return y;
+}
+
+function dadosPdf(){
+  return {
+    nome: S.pac.nome.trim(), cpf: S.pac.cpf.trim(), nasc: S.pac.nasc.trim(),
+    convenio: S.pac.op.trim(), carteirinha: S.pac.cart.trim(),
+    plano: S.pac.plano.trim(), acomodacao: S.pac.acom.trim(), ans: S.pac.ans.trim(),
+    telefone: S.pac.tel.trim(), email: S.pac.email.trim(), enderecoPaciente: S.pac.end.trim()
+  };
+}
+
+function exigirPaciente(d){
+  const faltam = [['nome','Nome'], ['convenio','Convênio'], ['carteirinha','Nº da carteirinha']]
+    .filter(([c]) => !d[c]).map(([,r]) => r);
+  if(faltam.length){ toast('Preencha na etapa 0: ' + faltam.join(', ')); return false; }
+  if(!window.jspdf){ toast('Biblioteca de PDF não carregou. Verifique a conexão.'); return false; }
+  return true;
+}
+
+function salvarPdf(doc, prefixo, nome){
+  numerarPaginas(doc);
+  doc.save(`${prefixo}_${nome.replace(/\s+/g,'_')}.pdf`);
+  toast('PDF gerado!');
+}
+
+function gerarGuiaPDF(){
+  const d = dadosPdf(); if(!exigirPaciente(d)) return;
+  const doc = novoDoc();
+  let y = desenharCabecalhoMedico(doc, 16);
+  y = desenharIdentificacao(doc, y, d);
+  y = tituloSublinhado(doc, y, 'SOLICITAÇÃO DE GUIA DE PROCEDIMENTO');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10.5);
+  doc.text(seguroPdf(`Ao Convênio ${d.convenio},`), 15, y); y += 12;
+  y = desenharBlocos(doc, y, blocosDoTexto(textoGuia()));
+  y = checarQuebraPagina(doc, y, 60);
+  doc.setFont('helvetica','normal'); doc.setFontSize(10.5);
+  doc.text('Atenciosamente!', 15, y); y += 6;
+  desenharAssinaturaERodape(doc, y, S.endereco, 30);
+  salvarPdf(doc, 'Guia', d.nome);
+}
+
+function gerarRelatorioPDF(){
+  const d = dadosPdf(); if(!exigirPaciente(d)) return;
+  const doc = novoDoc();
+  let y = desenharCabecalhoMedico(doc, 16);
+  y = desenharIdentificacao(doc, y, d);
+  y = tituloSublinhado(doc, y, 'RELATÓRIO MÉDICO — JUSTIFICATIVA TÉCNICA');
+  // A primeira linha do texto é o próprio título, já desenhado acima.
+  const corpo = textoRelatorio().split('\n').slice(1).join('\n');
+  y = desenharBlocos(doc, y, blocosDoTexto(corpo));
+  desenharAssinaturaERodape(doc, y, S.endereco, 30);
+  salvarPdf(doc, 'Relatorio', d.nome);
+}
+
+/* Uma página por exame: cada um sai com justificativa clínica, CID e TUSS —
+   exame sem justificativa é motivo frequente de glosa. */
+function gerarExamesPDF(){
+  const d = dadosPdf(); if(!exigirPaciente(d)) return;
+  const c = dor();
+  const exames = examesDoCaso().filter(e => !S.laudo.has(e.id));
+  if(!exames.length){ toast('Nenhum exame a solicitar: todos já têm laudo.'); return; }
+
+  const doc = novoDoc();
+  exames.forEach((e, i) => {
+    if(i > 0){ doc.addPage(); desenharMoldura(doc); desenharMarcaDagua(doc); }
+    let y = desenharCabecalhoMedico(doc, 16);
+    y = desenharIdentificacao(doc, y, d);
+    y = tituloSublinhado(doc, y, 'SOLICITAÇÃO DE EXAMES COMPLEMENTARES');
+    y = desenharSecao(doc, y, '# EXAME SOLICITADO:', [`${e.nome} — TUSS ${e.tuss}`], '*');
+    y = desenharSecao(doc, y, '# INDICAÇÃO CLÍNICA:', [e.just]);
+    y = desenharSecao(doc, y, '# HIPÓTESE DIAGNÓSTICA:', [`${c.nome} (${c.ichd})`], '*');
+    y = desenharSecao(doc, y, '# CID:', [c.cid], '*');
+    y = checarQuebraPagina(doc, y, 60);
+    doc.setFont('helvetica','normal'); doc.setFontSize(10.5);
+    doc.text('Atenciosamente!', 15, y); y += 6;
+    desenharAssinaturaERodape(doc, y, S.endereco, 30);
+  });
+  salvarPdf(doc, 'Exames', d.nome);
+}
+
 /* ---------- Sessão (só neste aparelho — LGPD) ---------- */
 const CHAVE = 'in-neuro-cefaleia:sessao';
 function salvar(){
   try {
     // As imagens nunca entram aqui: vivem na memória da página até a extração.
     sessionStorage.setItem(CHAVE, JSON.stringify({
-      pac:S.pac, clin:S.clin, tratPrevios:S.tratPrevios,
+      pac:S.pac, clin:S.clin, tratPrevios:S.tratPrevios, endereco:S.endereco,
       dor:S.dor, proc:S.proc, glosa:S.glosa, teste:S.teste,
       crit:[...S.crit], alarme:[...S.alarme], laudo:[...S.laudo], dos:[...S.dos]
     }));
@@ -757,6 +1209,7 @@ function carregar(){
     S.pac = Object.assign(S.pac, r.pac||{});
     S.clin = Object.assign(S.clin, r.clin||{});
     S.tratPrevios = Array.isArray(r.tratPrevios) ? r.tratPrevios : [];
+    S.endereco = r.endereco === 'floriano' ? 'floriano' : 'vinci';
     S.dor = r.dor; S.proc = r.proc; S.glosa = r.glosa || '';
     S.teste = Object.assign(novoTeste(), r.teste||{});
     S.crit = new Set(r.crit||[]); S.alarme = new Set(r.alarme||[]);
@@ -1010,6 +1463,7 @@ async function iniciar(){
   bindCampos();
   bindEtapa0();
   renderTrat();
+  carregarAssets();   // logo e marca d'água do PDF, em segundo plano
   $('foot').textContent = `Base v${KB.meta.versao} (${KB.meta.data}). ${KB.meta.aviso}`;
   render();
 }
