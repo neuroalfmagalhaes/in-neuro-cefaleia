@@ -38,9 +38,12 @@ Demais regras:
 - "hda" é a história da doença atual, em prosa corrida, 3ª pessoa, em português
   (parágrafos separados por \\n\\n). Não usar tópicos nem abreviar o que está escrito.
 - "exameNeurologico" são os achados do exame físico/neurológico, também em prosa.
-- "examesComplementares": exames de imagem citados no texto (RM, TC, angio-RM,
-  radiografia etc.), um por linha (separados por \\n), no formato
-  "NOME DO EXAME: achado principal". Apenas os realmente citados.
+- "examesComplementares": apenas exames JÁ REALIZADOS, cujo resultado ou laudo esteja
+  descrito no texto (RM, TC, angio-RM, radiografia etc.), um por linha (separados por
+  \\n), no formato "NOME DO EXAME: achado principal".
+  NÃO inclua exame que foi apenas solicitado, pedido, programado ou que o paciente não
+  trouxe — na guia isso viraria a afirmação falsa de que o exame já foi feito. Se não
+  houver exame com resultado descrito, devolva "".
 - "tratamentosPrevios": um item por medicamento de tratamento ou profilaxia citado
   (ex.: amitriptilina, topiramato, propranolol, carbamazepina, verapamil, lítio).
   Copie "dose", "periodo" e "desfecho" exatamente como estão escritos. Se o texto não
