@@ -19,44 +19,59 @@ O passo a passo de instalação, os prompts do Plan Mode e o deploy estão em `d
 - Todos os campos extraídos ficam **editáveis** antes de gerar o PDF.
 
 ### 1.2 PDF (layout idêntico à Guia de Procedimento Cirúrgico)
-Copiar o módulo jsPDF do app. Especificação de referência (espelho de `gerar_guia_cirurgia.py` da skill):
 
-| Elemento | Especificação |
+> **Decisão do Dr. Alfredo (10/09/2026):** a especificação é o **módulo jsPDF do app de referência V6**, copiado tal e qual — não o `gerar_guia_cirurgia.py` antigo da skill. O motivo é que a Guia de Cefaleia tem de sair visualmente idêntica às Guias Cirúrgicas que o consultório já emite. Os valores abaixo foram medidos em `referencia/in-neuro-surgical-app/pwa-versions/IN NEURO App V6/index.html:427-558`.
+
+| Elemento | Especificação (V6, em mm) |
 |---|---|
-| Página | A4 · margens 2,6 cm (sup/inf) e 2,8 cm (lat) |
-| Logo | IN NEURO no topo da 1ª página, 8,5 cm de largura |
-| Marca d'água | símbolo IN NEURO 15 × 15 cm, centralizado, todas as páginas |
-| Moldura | tripla: externa espessa teal `#1a5c52`, meio fina dourada `#b8926a`, interna fina teal · adornos nos 4 cantos |
-| Nome do médico | 14 pt, negrito-itálico, centralizado, teal |
+| Página | A4 (210 × 297) · corpo em `x = 15`, largura de quebra 180 |
+| Logo | IN NEURO no topo da 1ª página, **60 mm** de largura, centralizado (`y = 16`) |
+| Marca d'água | símbolo IN NEURO 150 × 150, centralizado, opacidade 0,06, todas as páginas |
+| Moldura | tripla, **sem adornos de canto**: externa navy `#092d67` 2,0 mm a 8 mm da borda · meio dourada `rgb(184,146,106)` 0,5 mm a 10,5 mm · interna navy 0,35 mm a 12 mm |
+| Nome do médico | **15 pt**, negrito-itálico, centralizado, navy `#092d67` |
 | Linha CREMESP/RQE | 10,5 pt negrito, cinza `#444444` |
-| Título do documento | 11 pt, negrito, CAIXA ALTA, sublinhado, centralizado |
-| Corpo | 10,5 pt · seções `# TÍTULO:` em negrito, nunca separadas dos seus itens na quebra de página |
+| Identificação do paciente | 10 pt · duas colunas (esquerda em `x = 15`, direita alinhada em `x = 195`) · entrelinha 5 |
+| Título do documento | 11 pt, negrito, CAIXA ALTA, sublinhado (linha calculada por `getTextWidth`), centralizado |
+| Corpo | 10,5 pt · seções `# TÍTULO:` em negrito, **nunca separadas dos seus itens na quebra de página** |
 | Assinatura | espaço em branco reservado, **sem linha e sem texto** (Bird ID / Gov.br com QR code) |
-| Rodapé | preto, 9,6 pt, centralizado, linha cinza `#999999` acima · endereço **Vinci** ou **Floriano** escolhido por **botão**, nunca digitado |
+| Rodapé | preto, **8 pt**, centralizado, linha cinza `#999999` (0,5 mm) acima · endereço **Vinci** ou **Floriano** escolhido por **botão**, nunca digitado |
 
-- Usar a mesma fonte já corrigida no app (houve bug de resíduo de Helvetica — não regredir).
+- Fonte: apenas as built-in do jsPDF (`helvetica` nos estilos normal, bold e bolditalic). Não regredir para resíduo de Helvetica configurada à mão.
 - **Não alterar cabeçalho/rodapé** sem autorização explícita.
+
+**Quatro pontos em que o V6 é copiado com correção, não tal e qual:**
+
+1. **Assinatura** — o V6 carimba um JPEG (`SIGNATURE`). Aqui **não**: a constante não é copiada e a área fica em branco para o Bird ID / Gov.br.
+2. **Título órfão** — o V6 checa a quebra de página do título e das linhas separadamente, e o título pode ficar sozinho no pé. Medir título + 1ª linha juntos.
+3. **Pendências** — toda string com `[confirmar]` ou `[PREENCHER]` sai em negrito no PDF e destacada na interface. Nunca é removida nem substituída.
+4. **`splitBold()`** — está vazio no V6 (`index.html:497-500`). Implementar de verdade: rótulo em negrito, valor em normal, na identificação do paciente.
 
 ---
 
-## 2. Abas do app
+## 2. Etapas do app
 
-| # | Aba | Função | Saída |
+> **Decisão do Dr. Alfredo (10/09/2026):** o app **não tem barra de abas**. É uma **via linear única**, de cima para baixo, com etapas que se destravam conforme o caso é preenchido — como o `prototipo/index.html`. Menos toques no celular, e fica impossível pular o bloqueio teste. As sete funções abaixo são **seções dessa via**, não abas.
+
+| # | Etapa | Função | Saída |
 |---|---|---|---|
-| 1 | **Triagem** | Fluxograma diagnóstico: critérios ICHD-3 + sinais de alarme (SNNOOP10) | Hipótese diagnóstica |
-| 2 | **Exames de Imagem** | Checklist de RM/TC por cefaleia e por procedimento (seção 3.7) | Solicitação de Exames em PDF — 1 página por exame, com justificativa clínica e CID (mesmo formato da aba Exames do app atual) |
-| 3 | **Elegibilidade** | Checklist por cefaleia × procedimento | Semáforo de risco de glosa + lista do que falta documentar |
-| 4 | **Guia de Procedimento** | Mesmo documento da Guia Cirúrgica, adaptado | PDF |
-| 5 | **Relatório de Justificativa Técnica** | Texto com indicação, falhas terapêuticas e referências fixas | PDF (anexo da guia) |
-| 6 | **Contestação** | Pedido de reanálise à Ouvidoria da operadora, conforme o motivo da negativa | PDF |
-| 7 | **Kit NIP** | Texto em 1ª pessoa para o **paciente** registrar a NIP + lista de anexos | PDF/TXT para o paciente |
+| 0 | **Paciente e história** | Carteirinha por foto, print da história clínica, campos editáveis, tabela de tratamentos prévios | Alimenta todas as etapas seguintes |
+| 1 | **Qual é a dor?** | Escolha entre as 5 cefaleias | Define tudo o que vem depois |
+| 2 | **Critérios e sinais de alarme** | Critérios ICHD-3 + SNNOOP10 | Hipótese diagnóstica |
+| 3 | **Exames de imagem** | Checklist de RM/TC por cefaleia e por procedimento (seção 3.7) | Solicitação de Exames em PDF — 1 página por exame, com justificativa clínica e CID (mesmo formato da aba Exames do app atual) |
+| 4 | **Procedimento** | Semáforo de risco de glosa por cefaleia × procedimento | Procedimento escolhido |
+| 5 | **Bloqueio teste e observação** | Só aparece em RF na neuralgia occipital e na salvas (`bloqueio_teste` no JSON) | Guia do bloqueio teste + ficha de dor do paciente (PDF) |
+| 6 | **Dossiê do pedido** | Checklist de elegibilidade | Lista do que falta documentar |
+| 7 | **Guia + Relatório** | Guia de Procedimento e justificativa técnica com as referências fixas | 2 PDFs |
+| 8 | **Se houver negativa** | Reanálise na Ouvidoria conforme o motivo + Kit NIP em 1ª pessoa para o paciente | 2 PDFs |
 
-Fluxo: 1 → 2 → 3 → (4 + 5 juntos) → se negada: 6 → se mantida: 7.
+As etapas 6 a 8 ficam **travadas** enquanto o bloqueio teste não estiver no estado "RF indicada" (positivo com retorno da dor). Etapa não preenchida aparece apagada, não escondida.
+
 Procedimentos cobertos: **Bloqueio de nervos cranianos · Botox (PREEMPT) · Radiofrequência (térmica ou pulsada)**.
 Para radiofrequência sob sedação, o app deve oferecer também a rotina pré-procedimento (exames laboratoriais/encaminhamentos) reaproveitando as abas Encaminhamentos e Exames do app atual.
-Os dados do paciente preenchidos uma vez alimentam todas as abas.
+Os dados do paciente preenchidos uma vez alimentam todas as etapas, e ficam só na sessão do aparelho.
 
-### Seções da Guia (aba 4)
+### Seções da Guia (etapa 7)
+
 `# HISTÓRIA DA DOENÇA ATUAL:` · `# EXAME NEUROLÓGICO:` · `# EXAMES COMPLEMENTARES:` (uma linha "*" por exame citado, nunca linha vazia) · `# TRATAMENTOS PRÉVIOS:` (**nova** — medicação, dose, tempo, motivo da suspensão) · `# INDICAÇÃO:` · `# CÓDIGOS:` · `# MATERIAIS/MEDICAMENTOS:` · `# CID:`
 
 ---
@@ -98,7 +113,7 @@ Os dados do paciente preenchidos uma vez alimentam todas as abas.
 - Escalas basais: MIDAS e HIT-6.
 - Protocolo: 155 U em 31 pontos (até 195 U em 39 pontos, *follow-the-pain*), a cada 12 semanas → 2 frascos de 100 U.
 - Contraindicações: gestação, lactação, doença da junção neuromuscular, infecção local.
-- **Renovação**: registrar resposta após 2 ciclos. Critério NICE de suspensão: redução <30% dos dias de cefaleia após 2 ciclos, ou retorno a enxaqueca episódica (<15 dias/mês) por 3 meses consecutivos. A aba deve ter o campo "resposta ao ciclo anterior" para os pedidos de continuidade.
+- **Renovação**: registrar resposta após 2 ciclos. Critério NICE de suspensão: redução <30% dos dias de cefaleia após 2 ciclos, ou retorno a enxaqueca episódica (<15 dias/mês) por 3 meses consecutivos. A etapa 6 (dossiê) deve ter o campo "resposta ao ciclo anterior" para os pedidos de continuidade.
 
 ### 3.5 Checklist — Radiofrequência (térmica × pulsada)
 
@@ -141,7 +156,7 @@ Os dados do paciente preenchidos uma vez alimentam todas as abas.
 | Materiais de RF (cânula/eletrodo) | **[PREENCHER]** | modelos do fornecedor habitual |
 | CIDs | G43.x · G44.2 · G44.0 · G50.0 · Arnold **[PREENCHER]** | confirmar G43.7 por operadora |
 
-### 3.7 Checklist — Exames de imagem (aba 2)
+### 3.7 Checklist — Exames de imagem (etapa 3)
 
 **Regra geral**: sinal de alarme (SNNOOP10), mudança de padrão, exame neurológico alterado ou cefaleia nova após 50 anos → **RM de crânio com e sem contraste**. TC de crânio só em urgência (cefaleia em trovoada, trauma) ou contraindicação à RM. Cada exame sai com justificativa clínica e CID — exame sem justificativa é motivo frequente de glosa.
 
@@ -193,7 +208,7 @@ Os dados do paciente preenchidos uma vez alimentam todas as abas.
 
 ---
 
-## 4. Contestação (aba 6) e Kit NIP (aba 7)
+## 4. Contestação e Kit NIP (etapa 8)
 
 ### 4.1 Sequência
 1. Exigir a **negativa por escrito** com fundamento (RN 623).
@@ -222,22 +237,21 @@ Os dados do paciente preenchidos uma vez alimentam todas as abas.
 ## 5. Técnico
 
 - **Stack**: HTML/JS client-side + PWA, como o app de referência. Deploy por **GitHub CD → Netlify, branch `main`** (o deploy via MCP retorna 403).
-- **Chave da API Anthropic**: verificar como o app atual a protege. Se estiver no front-end, mover para uma **Netlify Function** (proxy) com a chave em variável de ambiente (`envVarIsSecret: false`, por causa do bug já conhecido).
-- **Modelo**: o mesmo do app atual (ou `claude-sonnet-5`).
-- **LGPD**: dados de saúde. Nada de persistência de paciente no servidor; tudo em memória na sessão. Opcional: salvar o PDF final na pasta do paciente no Google Drive.
-- **Prompts**:
+- **Chave da API Anthropic**: já verificado — o app de referência **não** expõe a chave no front-end. Ele chama `/.netlify/functions/extract`, e a function lê `process.env.ANTHROPIC_API_KEY`. Copiar esse desenho, com a variável cadastrada no Netlify **sem** marcar como secreta (bug já conhecido neste ambiente).
+- **Modelo**: `claude-sonnet-4-6`, o mesmo que o app de referência usa em produção.
+- **LGPD**: dados de saúde. Nada de persistência de paciente no servidor; tudo na sessão do aparelho (`sessionStorage`). Opcional: salvar o PDF final na pasta do paciente no Google Drive.
+- **Prompts** (ficam **no servidor**, dentro da function, não no bundle do cliente):
   - carteirinha → JSON estrito, sem texto extra;
   - história → prosa em 3ª pessoa;
-  - relatório/contestação → só referências de `data/references.json`, dados ausentes marcados `[PREENCHER]`, sem inventar achados, doses ou códigos.
+  - relatório/contestação → só as referências de `data/algoritmo.json` (chave `referencias`), dados ausentes marcados `[PREENCHER]`, sem inventar achados, doses ou códigos.
 
 ---
 
 ## 6. Sprints
 
-1. **Sprint 1** — Estrutura do app + entrada de dados (carteirinha e print) + **Guia e Relatório** para Bloqueio, Botox e Radiofrequência.
-2. **Sprint 2** — Triagem (5 cefaleias) + **Exames de Imagem** + Elegibilidade com semáforo.
-3. **Sprint 3** — Contestação (Ouvidoria) + Kit NIP.
-4. **Sprint 4** — Via da neuralgia do trigêmeo → integração com o Rotina Cirúrgica para os procedimentos cirúrgicos.
+> A lista de sprints vale a que está em **`docs/ROTEIRO.md`**, com os critérios de aceite. A ordem abaixo, da primeira versão deste briefing, ficou **desatualizada** — o algoritmo (triagem, exames, elegibilidade) entrou no Sprint 1, antes da entrada de dados.
+
+Situação: **Sprint 1 concluído** (esqueleto PWA + algoritmo lendo `data/algoritmo.json`, com paridade de texto verificada contra o protótipo). Próximo: Sprint 2 — carteirinha e print da história clínica.
 
 ---
 
