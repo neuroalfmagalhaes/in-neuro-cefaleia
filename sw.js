@@ -1,4 +1,6 @@
-const CACHE_NAME = 'in-neuro-cefaleia-v2';
+// v3: limpa o cache de quem já tenha gravado a tela de bloqueio (401) no
+// lugar do app, antes da correção abaixo.
+const CACHE_NAME = 'in-neuro-cefaleia-v3';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -37,10 +39,18 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request)
       .then((resp) => {
-        const clone = resp.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        // O site é protegido: sem sessão válida, o Netlify devolve 401 com a
+        // tela de bloqueio. Guardar isso no cache sobrescreveria o app, e o
+        // PWA passaria a abrir a tela de bloqueio mesmo já autenticado.
+        // Só resposta boa entra no cache.
+        if (resp.ok) {
+          const clone = resp.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        }
         return resp;
       })
+      // Sem rede: serve do cache. Se não houver cópia, o erro sobe — melhor
+      // que devolver uma resposta enganosa.
       .catch(() => caches.match(event.request))
   );
 });
