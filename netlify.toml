@@ -5,6 +5,41 @@
 [functions]
   node_bundler = "esbuild"
 
+# publish = "." serve o repositório inteiro. A documentação interna não pode
+# ficar aberta: docs/BRIEFING.md traz os avisos internos sobre os pontos fracos
+# da argumentação ("a recomendação desfavorável da ANS é o ponto fraco"), que
+# um auditor da operadora não deve ler. force = true é necessário — sem ele o
+# arquivo estático vence a regra.
+[[redirects]]
+  from = "/docs/*"
+  to = "/"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/prototipo/*"
+  to = "/"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/CLAUDE.md"
+  to = "/"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/README.md"
+  to = "/"
+  status = 404
+  force = true
+
+[[redirects]]
+  from = "/.claude/*"
+  to = "/"
+  status = 404
+  force = true
+
 # O service worker, o app e a base clínica não podem ficar presos no cache do
 # navegador: uma correção de regra tem de chegar no próximo acesso.
 [[headers]]
