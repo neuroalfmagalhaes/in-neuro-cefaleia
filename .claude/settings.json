@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(rm -rf .playwright-mcp)",
+      "Bash(python -c \"import io,json; d=json.load\\(io.open\\('data/algoritmo.json',encoding='utf-8'\\)\\); o=json.load\\(io.open\\('data/operadoras.json',encoding='utf-8'\\)\\); print\\('algoritmo', d['meta']['versao'], '| operadoras:', len\\(o['operadoras']\\)\\)\")"
     ]
   }
 }

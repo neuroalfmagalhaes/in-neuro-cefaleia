@@ -1,6 +1,6 @@
 {
   "meta": {
-    "versao": "1.2",
+    "versao": "1.4",
     "data": "2026-09-12",
     "medico": {
       "nome": "Dr. Alfredo Magalhães",
@@ -60,7 +60,8 @@
           "tuss": "31602045",
           "desc": "Bloqueio anestésico de nervos cranianos",
           "qtd": "por nervo/lado, conforme regra da operadora",
-          "ref": "CH 250 em tabela de referência"
+          "ref": "CH 250 em tabela de referência",
+          "conta_por": "nervo_lado"
         }
       ],
       "materiais": [
@@ -79,7 +80,8 @@
           "tuss": "20103140",
           "desc": "Bloqueio fenólico, alcoólico ou com toxina botulínica (de pontos motores) — por membro ou segmento corporal",
           "qtd": "por segmento (cabeça e pescoço) — confirmar regra da operadora",
-          "ref": "Rol com DUT restrita a distonias/espasticidade"
+          "ref": "Rol com DUT restrita a distonias/espasticidade",
+          "conta_por": "segmento"
         }
       ],
       "materiais": [
@@ -146,6 +148,29 @@
           "refs": [
             "ichd3",
             "blumenfeld"
+          ],
+          "nervos_disponiveis": [
+            {
+              "id": "occ_maior",
+              "nome": "Occipital maior",
+              "bilateral": true,
+              "padrao": "bilateral"
+            },
+            {
+              "id": "supraorbital",
+              "nome": "Supraorbital",
+              "bilateral": true
+            },
+            {
+              "id": "supratroclear",
+              "nome": "Supratroclear",
+              "bilateral": true
+            },
+            {
+              "id": "auriculotemporal",
+              "nome": "Auriculotemporal",
+              "bilateral": true
+            }
           ]
         },
         "botox": {
@@ -171,7 +196,19 @@
             "conitec70"
           ],
           "alvo": "Protocolo PREEMPT: 155 U em 31 pontos fixos, 7 grupos musculares de cabeça e pescoço (até 195 U em 39 pontos, follow-the-pain), a cada 12 semanas",
-          "fora_rol": true
+          "fora_rol": true,
+          "segmentos_disponiveis": [
+            {
+              "id": "cabeca",
+              "nome": "Cabeça",
+              "padrao": true
+            },
+            {
+              "id": "pescoco",
+              "nome": "Pescoço",
+              "padrao": true
+            }
+          ]
         },
         "rf": {
           "risco": "nao",
@@ -215,6 +252,14 @@
           "refs": [
             "ichd3",
             "blumenfeld"
+          ],
+          "nervos_disponiveis": [
+            {
+              "id": "occ_maior",
+              "nome": "Occipital maior",
+              "bilateral": true,
+              "padrao": "bilateral"
+            }
           ]
         },
         "botox": {
@@ -274,6 +319,24 @@
           "refs": [
             "ichd3",
             "blumenfeld"
+          ],
+          "nervos_disponiveis": [
+            {
+              "id": "occ_maior",
+              "nome": "Occipital maior",
+              "bilateral": true,
+              "padrao": "lado"
+            },
+            {
+              "id": "occ_menor",
+              "nome": "Occipital menor",
+              "bilateral": true
+            },
+            {
+              "id": "occ_terceiro",
+              "nome": "Terceiro occipital",
+              "bilateral": true
+            }
           ]
         },
         "botox": {
@@ -290,13 +353,15 @@
               "tuss": "31403336",
               "desc": "Rizotomia percutânea por segmento — qualquer método",
               "qtd": "por segmento/lado",
-              "ref": "DUT 62, item 3"
+              "ref": "DUT 62, item 3",
+              "conta_por": "nervo_lado"
             },
             {
               "tuss": "40811026",
               "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)",
               "qtd": "por hora ou fração",
-              "ref": "se guiada por radioscopia"
+              "ref": "se guiada por radioscopia",
+              "conta_por": "hora"
             }
           ],
           "materiais_extra": [
@@ -322,6 +387,19 @@
             "cohen2015",
             "vanelderen",
             "prf_rs2024"
+          ],
+          "nervos_disponiveis": [
+            {
+              "id": "occ_maior",
+              "nome": "Occipital maior",
+              "bilateral": true,
+              "padrao": "lado"
+            },
+            {
+              "id": "occ_menor",
+              "nome": "Occipital menor",
+              "bilateral": true
+            }
           ]
         }
       }
@@ -371,6 +449,14 @@
             "ichd3",
             "ambrosini",
             "leroux"
+          ],
+          "nervos_disponiveis": [
+            {
+              "id": "occ_maior",
+              "nome": "Occipital maior",
+              "bilateral": true,
+              "padrao": "lado"
+            }
           ]
         },
         "botox": {
@@ -387,13 +473,15 @@
               "tuss": "31403336",
               "desc": "Rizotomia percutânea por segmento — qualquer método",
               "qtd": "1 (alvo ipsilateral)",
-              "ref": "radiofrequência pulsada — confirmar enquadramento; fora da DUT 62"
+              "ref": "radiofrequência pulsada — confirmar enquadramento; fora da DUT 62",
+              "conta_por": "nervo_lado"
             },
             {
               "tuss": "40811026",
               "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)",
               "qtd": "por hora ou fração",
-              "ref": "obrigatória no acesso ao gânglio esfenopalatino"
+              "ref": "obrigatória no acesso ao gânglio esfenopalatino",
+              "conta_por": "hora"
             }
           ],
           "materiais_extra": [
@@ -419,7 +507,20 @@
             "sanders",
             "narouze"
           ],
-          "fora_rol": true
+          "fora_rol": true,
+          "nervos_disponiveis": [
+            {
+              "id": "occ_maior",
+              "nome": "Occipital maior",
+              "bilateral": true,
+              "padrao": "lado"
+            },
+            {
+              "id": "esfenopalatino",
+              "nome": "Gânglio esfenopalatino",
+              "bilateral": true
+            }
+          ]
         }
       }
     },
@@ -469,6 +570,23 @@
           "refs": [
             "ichd3",
             "ean_nt"
+          ],
+          "nervos_disponiveis": [
+            {
+              "id": "supraorbital",
+              "nome": "Supraorbital",
+              "bilateral": true
+            },
+            {
+              "id": "infraorbital",
+              "nome": "Infraorbital",
+              "bilateral": true
+            },
+            {
+              "id": "mentoniano",
+              "nome": "Mentoniano",
+              "bilateral": true
+            }
           ]
         },
         "botox": {
@@ -484,7 +602,19 @@
             "ean_nt"
           ],
           "alvo": "Pontos no território do(s) ramo(s) acometido(s) — dose [PREENCHER]",
-          "fora_rol": true
+          "fora_rol": true,
+          "segmentos_disponiveis": [
+            {
+              "id": "cabeca",
+              "nome": "Cabeça",
+              "padrao": true
+            },
+            {
+              "id": "pescoco",
+              "nome": "Pescoço",
+              "padrao": true
+            }
+          ]
         },
         "rf": {
           "risco": "baixo",
@@ -496,13 +626,15 @@
               "tuss": "31404030",
               "desc": "Tratamento de nevralgia do trigêmio por técnica cirúrgica percutânea — qualquer método",
               "qtd": "1",
-              "ref": "código mais específico; a descrição manda cobrar a imagem à parte"
+              "ref": "código mais específico; a descrição manda cobrar a imagem à parte",
+              "conta_por": "fixo"
             },
             {
               "tuss": "40811026",
               "desc": "Radioscopia para acompanhamento de procedimento cirúrgico (por hora ou fração)",
               "qtd": "por hora ou fração",
-              "ref": "obrigatória"
+              "ref": "obrigatória",
+              "conta_por": "hora"
             }
           ],
           "materiais_extra": [
@@ -529,6 +661,14 @@
             "kanpolat",
             "ean_nt",
             "erdine"
+          ],
+          "nervos_disponiveis": [
+            {
+              "id": "gasser",
+              "nome": "Gânglio de Gasser",
+              "bilateral": true,
+              "padrao": "lado"
+            }
           ]
         }
       }

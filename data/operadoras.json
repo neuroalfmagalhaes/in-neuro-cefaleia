@@ -1,0 +1,11 @@
+{
+  "_leia": "Tabela do consultório, não conhecimento clínico. Valor em reais e quantidade aceita por código, por operadora. Os campos nascem vazios de propósito: nenhum valor pode ser inventado — só o Dr. Alfredo preenche, conforme for descobrindo em negativas, contatos com a auditoria e pedidos autorizados. Este arquivo é a semente; o app guarda as edições no localStorage do aparelho e permite exportar de volta para cá.",
+  "versao": "1.0",
+  "operadoras": [
+    { "id": "santacasa_sjc", "nome": "Santa Casa de São José dos Campos", "codigos": {} },
+    { "id": "bradesco", "nome": "Bradesco Saúde", "codigos": {} },
+    { "id": "sulamerica", "nome": "Sul América", "codigos": {} },
+    { "id": "porto_seguro", "nome": "Porto Seguro Saúde", "codigos": {} },
+    { "id": "amil", "nome": "Amil", "codigos": {} }
+  ]
+}

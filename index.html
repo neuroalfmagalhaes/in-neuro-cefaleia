@@ -189,6 +189,19 @@
     background: var(--gold-soft); border: 1px solid #e3d3bf; border-radius: 8px;
     padding: 7px 10px; font-size: 13px; margin: 6px 0; color: #5a4526;
   }
+  /* Nervos e lado */
+  .nervo { border-top: 1px solid var(--border); padding: 6px 0; }
+  .nervo:first-of-type { border-top: 0; }
+  .lados { display: flex; gap: 6px; margin: 4px 0 6px 28px; flex-wrap: wrap; }
+  .lado {
+    border: 1px solid var(--border); border-radius: 8px; padding: 5px 10px;
+    font-size: 12.5px; font-weight: 600; margin: 0; cursor: pointer; color: var(--muted);
+  }
+  .lado input { display: none; }
+  .lado.on { border-color: var(--teal); background: #e1e6f0; color: var(--teal); }
+  .op-cod { border-top: 1px solid var(--border); padding: 10px 0 4px; }
+  .op-cod:first-of-type { border-top: 0; padding-top: 0; }
+  .op-cod .t { font-size: 13px; margin-bottom: 4px; }
   .trat-item { border-top: 1px solid var(--border); padding: 12px 0 6px; }
   .trat-item:first-of-type { border-top: 0; padding-top: 0; }
   button.btn.mini { padding: 6px 12px; font-size: 12.5px; border-radius: 8px; }
@@ -221,7 +234,23 @@
 </header>
 
 <main>
-  <div class="via">
+  <div id="tela_ops" hidden>
+    <div class="box">
+      <h3>Tabela das operadoras</h3>
+      <p class="meta">Valor e quantidade aceita de cada código, por operadora. Fica só neste
+        aparelho. O app não preenche nada aqui: vá completando conforme descobrir em negativas,
+        contatos com a auditoria e pedidos autorizados.</p>
+      <div class="actions">
+        <button class="btn ghost mini" id="btn_ops_exportar">Exportar cópia</button>
+        <label class="btn ghost mini" style="cursor:pointer">Importar
+          <input type="file" accept="application/json" id="imp_ops" hidden></label>
+        <button class="btn mini" id="btn_ops_fechar">Voltar ao caso</button>
+      </div>
+    </div>
+    <div id="ops_corpo"></div>
+  </div>
+
+  <div class="via" id="bloco_via">
 
   <section class="step" id="etapa0">
     <div class="dot">0</div>
@@ -340,6 +369,10 @@ const S = {
   dor: null,
   crit: new Set(), alarme: new Set(), laudo: new Set(),
   proc: null, dos: new Set(), glosa: '', adi: new Set(),
+  nervos: {},                  // {id do nervo: 'direito'|'esquerdo'|'bilateral'}
+  segmentos: new Set(),        // Botox: contado por segmento corporal
+  minutosRadioscopia: '',
+  operadora: '',
   teste: novoTeste(),
   endereco: 'vinci'
 };
@@ -512,7 +545,61 @@ function stepProc(){
       <span><b>${esc(KB.procedimentos[id].nome)}${extra}</b>
       <span class="risk" style="color:${r.cor}">${r.txt}</span><br><span class="n">${esc(p.nota)}</span></span>
     </button>`;}).join('')}</div>`;
-  return {titulo:'Procedimento', sub:'O semáforo combina evidência, cobertura no Rol e histórico de auditoria.', html, done:!!S.proc};
+  const extra = S.proc ? blocoNervos() : '';
+  return {titulo:'Procedimento', sub:'O semáforo combina evidência, cobertura no Rol e histórico de auditoria.',
+          html: html + extra, done:!!S.proc};
+}
+
+/* Deixa o pedido semipronto: marca o que o JSON já indica como padrão para
+   aquele procedimento. Onde o JSON diz "ipsilateral" ou "lado acometido", o
+   nervo vem marcado mas o LADO fica em branco — qual lado dói é dado do
+   paciente, e errar isso na guia é erro grave. */
+function aplicarPadroes(){
+  const p = pd(); if(!p) return;
+  (p.nervos_disponiveis || []).forEach(n=>{
+    if(n.padrao === 'bilateral') S.nervos[n.id] = 'bilateral';
+    else if(n.padrao === 'lado') S.nervos[n.id] = '';     // marcado, lado pendente
+  });
+  (p.segmentos_disponiveis || []).forEach(s=>{ if(s.padrao) S.segmentos.add(s.id); });
+  if(!S.operadora && OPS.operadoras.length) S.operadora = OPS.operadoras[0].id;
+}
+
+/* O que foi realmente feito: nervo e lado. Sem isto o app não sabe a
+   quantidade e a guia só pode repetir "por nervo/lado, conforme a operadora". */
+function blocoNervos(){
+  const p = pd(); if(!p) return '';
+  const nervos = p.nervos_disponiveis || [];
+  const segs = p.segmentos_disponiveis || [];
+  if(!nervos.length && !segs.length) return '';
+
+  const opLados = (id, atual) => ['direito','esquerdo','bilateral'].map(l=>
+    `<label class="lado ${atual===l?'on':''}"><input type="radio" name="lado_${id}" value="${l}"
+      ${atual===l?'checked':''} data-lado="${id}"><span>${l[0].toUpperCase()+l.slice(1)}</span></label>`).join('');
+
+  const listaNervos = nervos.length ? `<div class="box"><h3>Nervos e lado</h3>
+    ${nervos.map(n=>{
+      const marcado = n.id in S.nervos, atual = S.nervos[n.id] || '';
+      return `<div class="nervo">
+        <label class="chk"><input type="checkbox" data-nervo="${n.id}" ${marcado?'checked':''}><span>${pend(n.nome)}</span></label>
+        ${marcado ? `<div class="lados">${n.bilateral ? opLados(n.id, atual)
+          : `<label class="lado on"><span>Único</span></label>`}</div>
+          ${!atual ? '<div class="note" style="margin:4px 0 8px 28px">Defina o lado: o JSON indica o lado acometido, que depende do paciente.</div>' : ''}` : ''}
+      </div>`;}).join('')}
+  </div>` : '';
+
+  const listaSegs = segs.length ? `<div class="box"><h3>Segmentos corporais</h3>
+    <p class="meta">O 20103140 é contado por segmento.</p>
+    ${segs.map(s=>`<label class="chk"><input type="checkbox" data-seg="${s.id}"
+      ${S.segmentos.has(s.id)?'checked':''}><span>${pend(s.nome)}</span></label>`).join('')}
+  </div>` : '';
+
+  const radio = codigosDoCaso().some(k=>k.tuss==='40811026') ? `<div class="box">
+    <h3>Radioscopia</h3>
+    <div class="f2"><label>Tempo em minutos<input type="number" min="0" max="600"
+      inputmode="numeric" id="min_radio" value="${esc(S.minutosRadioscopia)}"></label></div>
+    <p class="meta">Cobrada por hora ou fração.</p></div>` : '';
+
+  return listaNervos + listaSegs + radio + blocoOperadora();
 }
 
 function stepTeste(){
@@ -702,6 +789,42 @@ function chk(grupo,i,t,on){
   return `<label class="chk"><input type="checkbox" data-g="${grupo}" data-i="${i}" ${on?'checked':''}><span>${pend(t)}</span></label>`;
 }
 
+/* Operadora do caso: define as quantidades e o total esperado.
+   O total é informação interna do consultório — não entra em PDF nenhum. */
+function blocoOperadora(){
+  const cods = codigosDoCaso();
+  if(!cods.length) return '';
+  const ops = OPS.operadoras.map(o=>
+    `<option value="${o.id}" ${S.operadora===o.id?'selected':''}>${esc(o.nome)}</option>`).join('');
+  const t = totalEsperado(cods);
+  const avisos = acessoriosFaltando();
+
+  const linhas = cods.map(cod=>{
+    const {qtd, modo, limite, acima} = quantidadeDoCodigo(cod);
+    const regra = regraDoCodigo(cod.tuss);
+    const valor = Number(String(regra.valor||'').replace(',','.'));
+    return `<div class="cod">
+      <span class="tuss">${pend(cod.tuss)}</span>
+      <span class="d">${pend(cod.desc)}</span>
+      <span class="q">Quantidade: <b>${qtd || '—'}</b> ${esc(NOME_CONTA[modo]||modo)}
+        ${acima?`<span style="color:var(--alto)"> · acima do limite de ${limite} desta operadora</span>`:''}
+        · ${valor>0 ? moeda(valor) + ' cada' : 'valor não cadastrado'}</span>
+    </div>`;}).join('');
+
+  return `<div class="box"><h3>Operadora e quantidades</h3>
+    <select id="sel_operadora"><option value="">Selecione a operadora…</option>${ops}</select>
+    ${S.operadora ? linhas : '<p class="meta" style="margin-top:10px">Escolha a operadora para ver as quantidades e o valor.</p>'}
+    ${S.operadora ? `<div class="ready" style="margin-top:10px">Total esperado:
+      ${t.temAlgum ? moeda(t.total) : '—'}
+      ${t.faltam ? `<span class="meta"> · ${t.faltam} código(s) sem valor cadastrado</span>` : ''}</div>
+      <p class="meta">Uso interno. Não sai em nenhum documento enviado à operadora.</p>` : ''}
+    <div class="actions"><button class="btn ghost mini" id="btn_ops">Cadastrar valores e limites</button></div>
+    ${avisos.map(a=>`<div class="note">${pend(a)}</div>`).join('')}
+  </div>`;
+}
+const NOME_CONTA = { nervo:'(um por nervo)', lado:'(por lado)', nervo_lado:'(por nervo e lado)',
+                     segmento:'(por segmento)', hora:'(por hora ou fração)', fixo:'(fixa)' };
+
 /* Endereço do rodapé do PDF: escolhido por botão, nunca digitado. */
 function seletorEndereco(){
   const op = (v,r) => `<label><input type="radio" name="end" value="${v}" ${S.endereco===v?'checked':''}><span>${r}</span></label>`;
@@ -720,6 +843,37 @@ function textoExames(ex){
   return `SOLICITAÇÃO DE EXAMES\nPaciente: ${P.nome} | Operadora: ${P.op} | Carteirinha: ${P.cart}\n\n`+
     ex.map(e=>`* ${e.nome}${isOpt(e)?' (se indicado)':''} — TUSS ${e.tuss}\n  Indicação: ${e.just}\n  Hipótese: ${c.nome} (${c.ichd}) — CID ${c.cid}`).join('\n\n');
 }
+/* Descreve o ato pelo que foi marcado. Sem marcação, recua para o texto
+   genérico do JSON — a guia nunca fica sem descrição do procedimento. */
+function descricaoDoAto(p){
+  const nervos = p.nervos_disponiveis || [];
+  const marcados = nervos.filter(n => S.nervos[n.id]);
+  if(marcados.length){
+    const partes = marcados.map(n=>{
+      const lado = S.nervos[n.id];
+      return lado === 'bilateral' ? `${n.nome} bilateral`
+           : lado === 'direito'   ? `${n.nome} à direita`
+           : lado === 'esquerdo'  ? `${n.nome} à esquerda`
+           : n.nome;
+    });
+    const total = marcados.reduce((s,n)=> s + (S.nervos[n.id]==='bilateral'?2:1), 0);
+    const unidade = S.proc === 'rf' ? 'alvos' : 'bloqueios';
+    return `${partes.join('; ')} — ${total} ${total>1?unidade:unidade.replace(/s$/,'')}`;
+  }
+  const segs = (p.segmentos_disponiveis||[]).filter(s => S.segmentos.has(s.id));
+  if(segs.length) return `${p.alvo || ''} — segmentos: ${segs.map(s=>s.nome).join(' e ')}`;
+  return p.alvo || p.nervos || '';
+}
+
+/* A quantidade do código: a calculada quando dá, senão a regra do JSON. */
+function qtdParaGuia(cod){
+  const {qtd, modo} = quantidadeDoCodigo(cod);
+  if(!qtd) return cod.qtd;
+  if(modo === 'hora') return `${qtd} (${S.minutosRadioscopia} min — por hora ou fração)`;
+  if(modo === 'fixo') return cod.qtd;
+  return `${qtd} ${NOME_CONTA[modo] || ''}`.trim();
+}
+
 function textoGuia(){
   const c=dor(), p=pd(), P=pac();
   const crit = c.criterios.filter((_,i)=>S.crit.has(i));
@@ -738,8 +892,8 @@ function textoGuia(){
     }), '',
     `# TRATAMENTOS PRÉVIOS:`, ...linhasTratPrevios(), '',
     `# INDICAÇÃO:`, ...(frasesTeste()?[frasesTeste()]:[]), p.racional, '',
-    `# PROCEDIMENTO:`, `* ${p.alvo || p.nervos || ''}${p.modalidade?' — técnica: radiofrequência '+p.modalidade.toLowerCase():''}`, '',
-    `# CÓDIGOS:`, ...codigosDoCaso().map(k=>`* ${k.tuss} — ${k.desc} — qtd.: ${k.qtd}`), '',
+    `# PROCEDIMENTO:`, `* ${descricaoDoAto(p)}${p.modalidade?' — técnica: radiofrequência '+p.modalidade.toLowerCase():''}`, '',
+    `# CÓDIGOS:`, ...codigosDoCaso().map(k=>`* ${k.tuss} — ${k.desc} — qtd.: ${qtdParaGuia(k)}`), '',
     `# MATERIAIS:`, ...materiaisDoCaso().map(m=>`* ${m}`), '',
     `# MEDICAMENTOS:`, ...medsDoCaso().map(m=>`* ${m}`), '',
     `# CID:`, `* ${c.cid}`
@@ -827,11 +981,11 @@ function textoNIP(){
 /* ---------- Eventos ---------- */
 function bind(){
   document.querySelectorAll('[data-dor]').forEach(b=>b.onclick=()=>{
-    if(S.dor!==b.dataset.dor){ S.dor=b.dataset.dor; S.crit.clear(); S.laudo.clear(); S.proc=null; S.dos.clear(); S.glosa=''; S.adi.clear(); S.teste=novoTeste(); }
+    if(S.dor!==b.dataset.dor){ S.dor=b.dataset.dor; S.crit.clear(); S.laudo.clear(); S.proc=null; S.dos.clear(); S.glosa=''; S.adi.clear(); S.nervos={}; S.segmentos.clear(); S.minutosRadioscopia=''; S.teste=novoTeste(); }
     render();
   });
   document.querySelectorAll('[data-proc]').forEach(b=>b.onclick=()=>{
-    if(S.proc!==b.dataset.proc){ S.proc=b.dataset.proc; S.dos.clear(); S.glosa=''; S.adi.clear(); S.teste=novoTeste(); }
+    if(S.proc!==b.dataset.proc){ S.proc=b.dataset.proc; S.dos.clear(); S.glosa=''; S.adi.clear(); S.nervos={}; S.segmentos.clear(); S.minutosRadioscopia=''; S.teste=novoTeste(); aplicarPadroes(); }
     render();
   });
   document.querySelectorAll('input[data-g]').forEach(i=>i.onchange=()=>{
@@ -848,6 +1002,28 @@ function bind(){
   document.querySelectorAll('input[name=end]').forEach(r=>r.onchange=()=>{
     S.endereco = r.value; salvar(); render();
   });
+  document.querySelectorAll('input[data-nervo]').forEach(i=>i.onchange=()=>{
+    const id = i.dataset.nervo;
+    if(i.checked){
+      const n = (pd().nervos_disponiveis||[]).find(x=>x.id===id);
+      S.nervos[id] = !n ? 'unico'
+                   : n.padrao === 'bilateral' ? 'bilateral'
+                   : n.bilateral ? '' : 'unico';
+    } else delete S.nervos[id];
+    render();
+  });
+  document.querySelectorAll('input[data-lado]').forEach(i=>i.onchange=()=>{
+    S.nervos[i.dataset.lado] = i.value; render();
+  });
+  document.querySelectorAll('input[data-seg]').forEach(i=>i.onchange=()=>{
+    i.checked ? S.segmentos.add(i.dataset.seg) : S.segmentos.delete(i.dataset.seg); render();
+  });
+  const mr = $('min_radio');
+  if(mr) mr.onchange = ()=>{ S.minutosRadioscopia = mr.value; render(); };
+  const so = $('sel_operadora');
+  if(so) so.onchange = ()=>{ S.operadora = so.value; salvar(); render(); };
+  const bo = $('btn_ops');
+  if(bo) bo.onclick = ()=> abrirOperadoras(true);
   const PDFS = { guia: gerarGuiaPDF, relatorio: gerarRelatorioPDF, exames: gerarExamesPDF,
                  ouvidoria: gerarOuvidoriaPDF, nip: gerarNipPDF };
   document.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>PDFS[b.dataset.pdf]());
@@ -859,6 +1035,104 @@ function copiar(t){
 }
 function fallback(t){ const a=document.createElement('textarea'); a.value=t; document.body.appendChild(a); a.select(); try{document.execCommand('copy');toast('Copiado');}catch(e){toast('Selecione e copie manualmente');} a.remove(); }
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+/* =====================================================================
+   OPERADORAS — tabela do consultório: valor e quantidade aceita por código.
+   Não é dado de paciente nem conhecimento clínico. Fica no localStorage (tem
+   de sobreviver ao fechamento do navegador) e pode ser exportada/importada,
+   para não morrer num único aparelho. Nada vai para servidor.
+   O app NUNCA preenche valor ou quantidade: só o médico sabe, e chutar aqui
+   viraria número errado na guia.
+   ===================================================================== */
+
+const CHAVE_OPS = 'in-neuro-cefaleia:operadoras';
+let OPS = { versao:'1.0', operadoras: [] };
+
+/* Aceita só o que tem a forma esperada: um arquivo torto não pode derrubar o
+   app inteiro — o algoritmo e os PDFs não dependem desta tabela. */
+function adotarOperadoras(bruto){
+  if(bruto && Array.isArray(bruto.operadoras)){
+    OPS = bruto;
+    OPS.operadoras.forEach(o => { if(!o.codigos || typeof o.codigos !== 'object') o.codigos = {}; });
+    return true;
+  }
+  return false;
+}
+async function carregarOperadoras(){
+  try {
+    const local = localStorage.getItem(CHAVE_OPS);
+    if(local && adotarOperadoras(JSON.parse(local))) return;
+  } catch(e) { /* modo privado ou sessão corrompida: segue com a semente */ }
+  try {
+    const r = await fetch('data/operadoras.json', {cache:'no-cache'});
+    if(r.ok) adotarOperadoras(await r.json());
+  } catch(e) { console.warn('semente de operadoras não carregou', e); }
+}
+function salvarOperadoras(){
+  try { localStorage.setItem(CHAVE_OPS, JSON.stringify(OPS)); }
+  catch(e) { toast('Não consegui salvar a tabela neste navegador.'); }
+}
+const operadoraAtual = () => OPS.operadoras.find(o => o.id === S.operadora) || null;
+const regraDoCodigo = (tuss) => (operadoraAtual()?.codigos || {})[tuss] || {};
+
+/* Quantos itens pedir de um código, a partir do que foi realmente marcado.
+   conta_por vem do JSON; a operadora pode sobrescrever. */
+function quantidadeDoCodigo(cod){
+  const regra = regraDoCodigo(cod.tuss);
+  const modo = regra.conta_por || cod.conta_por || 'fixo';
+  const marcados = Object.entries(S.nervos).filter(([,lado]) => lado);
+  const lados = l => l === 'bilateral' ? 2 : 1;
+
+  let qtd;
+  switch(modo){
+    case 'nervo':      qtd = marcados.length; break;
+    case 'lado':       qtd = marcados.length ? Math.max(...marcados.map(([,l])=>lados(l))) : 0; break;
+    case 'nervo_lado': qtd = marcados.reduce((s,[,l]) => s + lados(l), 0); break;
+    case 'segmento':   qtd = S.segmentos.size; break;
+    case 'hora':       qtd = S.minutosRadioscopia ? Math.ceil(S.minutosRadioscopia/60) : 0; break;
+    default:           qtd = 1;
+  }
+  const limite = Number(regra.qtd_max) || 0;
+  return { qtd, modo, limite, acima: limite > 0 && qtd > limite };
+}
+
+/* Total esperado do pedido. Sem valor cadastrado devolve null — o app mostra
+   "—", nunca R$ 0,00, que pareceria um valor real. */
+function totalEsperado(cods){
+  let total = 0, faltam = 0;
+  cods.forEach(cod => {
+    const v = Number(String(regraDoCodigo(cod.tuss).valor || '').replace(',','.'));
+    const { qtd } = quantidadeDoCodigo(cod);
+    if(v > 0) total += v * Math.max(qtd, 1); else faltam++;
+  });
+  return { total, faltam, temAlgum: total > 0 };
+}
+const moeda = v => 'R$ ' + v.toFixed(2).replace('.', ',');
+
+/* Acessórios que o pedido costuma esquecer, lidos do próprio caso.
+   Só avisa — nunca acrescenta nada à guia por conta própria. */
+function acessoriosFaltando(){
+  const p = pd(); if(!p) return [];
+  const cods = codigosDoCaso();
+  const avisos = [];
+  const guiadoPorImagem = S.proc === 'rf';
+  if(guiadoPorImagem && !cods.some(k=>k.tuss==='40811026'))
+    avisos.push('Radioscopia (40811026) não está entre os códigos — procedimento guiado por imagem sem ela costuma voltar glosado.');
+  if(guiadoPorImagem && cods.some(k=>k.tuss==='40811026') && !S.minutosRadioscopia)
+    avisos.push('Informe o tempo de radioscopia: o código é cobrado por hora ou fração.');
+  if(S.proc === 'rf' && /sedação|sedacao/i.test(p.alvo || p.nota || ''))
+    avisos.push('Sedação/anestesia deve ser solicitada à parte, com a rotina pré-operatória.');
+  const temNervos = (p.nervos_disponiveis||[]).length;
+  if(temNervos && !Object.keys(S.nervos).length)
+    avisos.push('Nenhum nervo marcado — a quantidade não pode ser calculada.');
+  const semLado = (p.nervos_disponiveis||[]).filter(n => (n.id in S.nervos) && !S.nervos[n.id]);
+  if(semLado.length)
+    avisos.push('Sem lado definido: ' + semLado.map(n=>n.nome).join(', ') +
+      '. Enquanto o lado não for escolhido, o nervo não entra na guia nem na quantidade.');
+  if((p.segmentos_disponiveis||[]).length && !S.segmentos.size)
+    avisos.push('Nenhum segmento corporal marcado — o 20103140 é contado por segmento.');
+  return avisos;
+}
 
 /* =====================================================================
    MÓDULO PDF — copiado do IN NEURO Rotina Cirúrgica (V6, index.html:427-558).
@@ -1316,6 +1590,8 @@ function salvar(){
     // As imagens nunca entram aqui: vivem na memória da página até a extração.
     sessionStorage.setItem(CHAVE, JSON.stringify({
       pac:S.pac, clin:S.clin, tratPrevios:S.tratPrevios, endereco:S.endereco,
+      nervos:S.nervos, segmentos:[...S.segmentos],
+      minutosRadioscopia:S.minutosRadioscopia, operadora:S.operadora,
       dor:S.dor, proc:S.proc, glosa:S.glosa, teste:S.teste,
       crit:[...S.crit], alarme:[...S.alarme], laudo:[...S.laudo], dos:[...S.dos], adi:[...S.adi]
     }));
@@ -1331,6 +1607,7 @@ function novoPaciente(){
   S.crit.clear(); S.alarme.clear(); S.laudo.clear(); S.dos.clear(); S.adi.clear();
   S.teste = novoTeste();
   S.endereco = 'vinci';
+  S.nervos = {}; S.segmentos.clear(); S.minutosRadioscopia = ''; S.operadora = '';
   ['carteirinha','historia'].forEach(limpar);
   $('txt_historia').value = '';
   try { sessionStorage.removeItem(CHAVE); } catch(e) { /* modo privado */ }
@@ -1352,6 +1629,8 @@ function carregar(){
     S.crit = new Set(r.crit||[]); S.alarme = new Set(r.alarme||[]);
     S.laudo = new Set(r.laudo||[]); S.dos = new Set(r.dos||[]);
     S.adi = new Set(r.adi||[]);
+    S.nervos = r.nervos || {}; S.segmentos = new Set(r.segmentos||[]);
+    S.minutosRadioscopia = r.minutosRadioscopia || ''; S.operadora = r.operadora || '';
   } catch(e) { /* sessão corrompida: começa limpa */ }
 }
 
@@ -1378,6 +1657,80 @@ function bindCampos(){
 function espelharCampos(){
   Object.entries(CAMPOS).forEach(([id,k])=>{ $(id).value = S.pac[k] || ''; });
   Object.entries(CLIN).forEach(([id,k])=>{ $(id).value = S.clin[k] || ''; });
+}
+
+/* ---------- Tela de cadastro das operadoras ---------- */
+
+/* Todos os códigos que existem na base, com a descrição, para o cadastro. */
+function todosOsCodigos(){
+  const mapa = new Map();
+  const junta = k => { if(!mapa.has(k.tuss)) mapa.set(k.tuss, k); };
+  Object.values(KB.procedimentos).forEach(p => (p.codigos||[]).forEach(junta));
+  Object.values(KB.cefaleias).forEach(c =>
+    Object.values(c.proc).forEach(p => (p.codigos||[]).forEach(junta)));
+  return [...mapa.values()];
+}
+
+function renderOperadoras(){
+  const cods = todosOsCodigos();
+  const vazios = OPS.operadoras.reduce((n,o) =>
+    n + cods.filter(k => !(o.codigos[k.tuss]||{}).valor).length, 0);
+
+  $('ops_corpo').innerHTML = OPS.operadoras.map((o,oi)=>`
+    <div class="box">
+      <h3>${esc(o.nome)}</h3>
+      ${cods.map(k=>{
+        const r = o.codigos[k.tuss] || {};
+        return `<div class="op-cod">
+          <div class="t"><span class="tuss">${pend(k.tuss)}</span> ${pend(k.desc)}</div>
+          <div class="f2">
+            <label>Valor (R$)<input inputmode="decimal" data-op="${oi}" data-tuss="${k.tuss}"
+              data-campo="valor" value="${esc(r.valor||'')}" placeholder="não cadastrado"></label>
+            <label>Quantidade máxima<input inputmode="numeric" data-op="${oi}" data-tuss="${k.tuss}"
+              data-campo="qtd_max" value="${esc(r.qtd_max||'')}" placeholder="sem limite"></label>
+          </div>
+        </div>`;}).join('')}
+    </div>`).join('') +
+    `<p class="meta">${vazios} campo(s) de valor ainda em branco. A guia sai igual sem eles —
+      só o total esperado fica indisponível.</p>`;
+
+  $('ops_corpo').querySelectorAll('[data-op]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const o = OPS.operadoras[+el.dataset.op];
+      o.codigos[el.dataset.tuss] = o.codigos[el.dataset.tuss] || {};
+      o.codigos[el.dataset.tuss][el.dataset.campo] = el.value.trim();
+      salvarOperadoras();
+    });
+  });
+}
+
+function abrirOperadoras(mostrar){
+  $('tela_ops').hidden = !mostrar;
+  $('bloco_via').hidden = mostrar;
+  if(mostrar){ renderOperadoras(); window.scrollTo(0,0); }
+  else render();
+}
+
+function bindOperadoras(){
+  $('btn_ops_fechar').onclick = ()=> abrirOperadoras(false);
+  $('btn_ops_exportar').onclick = ()=>{
+    const blob = new Blob([JSON.stringify(OPS, null, 2)], {type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'operadoras.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast('Cópia exportada. Guarde no repositório para não perder.');
+  };
+  $('imp_ops').addEventListener('change', async e=>{
+    const f = e.target.files[0]; if(!f) return;
+    try {
+      const lido = JSON.parse(await f.text());
+      if(!Array.isArray(lido.operadoras)) throw new Error('formato inesperado');
+      OPS = lido; salvarOperadoras(); renderOperadoras();
+      toast('Tabela importada.');
+    } catch(err) { toast('Arquivo inválido: ' + err.message); }
+    e.target.value = '';
+  });
 }
 
 /* ---------- Tratamentos prévios ---------- */
@@ -1606,6 +1959,8 @@ async function iniciar(){
   bindCampos();
   bindEtapa0();
   renderTrat();
+  await carregarOperadoras();
+  bindOperadoras();
   carregarAssets();   // logo e marca d'água do PDF, em segundo plano
   $('foot').textContent = `Base v${KB.meta.versao} (${KB.meta.data}). ${KB.meta.aviso}`;
   render();
