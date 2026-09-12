@@ -227,6 +227,7 @@
     <div class="dot">0</div>
     <h2>Paciente e história</h2>
     <p class="sub">Fotografe a carteirinha e cole o print do prontuário. A IA preenche, o senhor confere — tudo continua editável.</p>
+    <div class="actions"><button class="btn ghost mini" id="btn_novo">Novo paciente</button></div>
 
     <div class="box">
       <h3>Carteirinha do convênio</h3>
@@ -338,7 +339,7 @@ const S = {
   tratPrevios: [],
   dor: null,
   crit: new Set(), alarme: new Set(), laudo: new Set(),
-  proc: null, dos: new Set(), glosa: '',
+  proc: null, dos: new Set(), glosa: '', adi: new Set(),
   teste: novoTeste(),
   endereco: 'vinci'
 };
@@ -636,27 +637,65 @@ function stepRelatorio(){
   return {titulo:'Relatório de justificativa técnica', sub:'Anexo da guia, com as referências fixas do caso.', html, done:true};
 }
 
+/* O pedido é fora do Rol quando o próprio JSON marca o procedimento assim,
+   ou quando a operadora alegou exatamente isso. Só nesse caso o checklist da
+   ADI 7265 faz sentido: marcá-lo num pedido coberto pela DUT 62 enfraquece o
+   argumento, porque sugere que o médico concorda que está fora do Rol. */
+const foraDoRol = () => !!(pd()?.fora_rol) || S.glosa === 'fora_rol';
+
 function stepGlosa(){
   const p = pd(); if(!p) return {titulo:'Se houver negativa', locked:true};
   const opts = Object.entries(KB.glosas).map(([id,g])=>`<option value="${id}" ${S.glosa===id?'selected':''}>${esc(g.nome)}</option>`).join('');
   let corpo = '';
   if(S.glosa){
     const g = KB.glosas[S.glosa];
-    const interno = (S.glosa==='fora_rol' && g.interno && (S.proc==='botox' && S.dor==='enxaqueca')) ? `<div class="flag">${esc(g.interno)}</div>` : '';
-    corpo = `${interno}
+    const A = KB.adi7265;
+    // O texto de glosas.fora_rol.interno trata especificamente do Botox na
+    // enxaqueca (recomendação desfavorável da ANS em 2020). Não serve para um
+    // pedido de radiofrequência — mostrar ali seria argumento fora de lugar.
+    const interno = (S.glosa==='fora_rol' && g.interno && S.proc==='botox' && S.dor==='enxaqueca')
+      ? `<div class="flag">${pend(g.interno)}</div>` : '';
+
+    const adi = foraDoRol() ? (()=>{
+      const tot = A.requisitos.length, ok = S.adi.size, falta = tot - ok;
+      return `<div class="box"><h3>${esc(A.nome)}</h3>
+        <p class="meta">${pend(A.fundamento)}</p>
+        ${A.requisitos.map((t,i)=>chk('adi',i,t,S.adi.has(i))).join('')}
+        <div class="bar"><i style="width:${Math.round(ok/tot*100)}%"></i></div>
+        <div class="ready" style="color:${falta?'var(--moderado-alto)':'var(--baixo)'}">${
+          falta ? `Faltam ${falta} de ${tot} requisitos — são cumulativos.` : 'Os cinco requisitos estão atendidos.'}</div>
+      </div>`;
+    })() : '';
+
+    const anexos = (g.anexos||[]).length ? `<div class="box"><h3>Anexar ao pedido</h3>
+      <ul class="l">${g.anexos.map(a=>`<li>${pend(a)}</li>`).join('')}</ul></div>` : '';
+
+    corpo = `${interno}${adi}${anexos}
       <div class="box"><h3>1. Reanálise na Ouvidoria (o senhor envia)</h3></div>
       <pre class="out" id="o_ouv">${pend(textoOuvidoria())}</pre>
-      <div class="actions"><button class="btn" data-copy="o_ouv">Copiar pedido de reanálise</button></div>
+      ${seletorEndereco()}
+      <div class="actions">
+        <button class="btn" data-pdf="ouvidoria">Gerar pedido em PDF</button>
+        <button class="btn ghost" data-copy="o_ouv">Copiar texto</button>
+      </div>
       <div class="box"><h3>2. Se mantida: NIP (o paciente registra)</h3>
-        <ul class="l"><li>Portal da ANS ou Disque ANS 0800 701 9656.</li><li>Guardar o número da NIP.</li><li>NIP assistencial: a operadora tem até 5 dias úteis.</li></ul>
+        <p class="meta">${pend(KB.nip.quem)}</p>
+        <ul class="l">${KB.nip.onde.map(o=>`<li>${pend(o)}</li>`).join('')}
+          <li>${pend(KB.nip.guardar)}</li><li>${pend(KB.nip.prazo)}</li></ul>
       </div>
       <pre class="out" id="o_nip">${pend(textoNIP())}</pre>
-      <div class="actions"><button class="btn" data-copy="o_nip">Copiar texto da NIP</button></div>
-      <div class="note">Se a NIP não resolver, o dossiê já está montado nos 5 requisitos da ADI 7265 para o jurídico.</div>`;
+      <div class="actions">
+        <button class="btn" data-pdf="nip">Gerar Kit NIP em PDF</button>
+        <button class="btn ghost" data-copy="o_nip">Copiar texto</button>
+      </div>
+      <div class="note">${pend(KB.sequencia[KB.sequencia.length-1])}</div>`;
   }
   const html = `<label class="meta" for="glosa">Motivo alegado pela operadora</label>
-    <select id="glosa"><option value="">Selecione…</option>${opts}</select>${corpo}`;
-  return {titulo:'Se houver negativa', sub:'Negativa por escrito (RN 623/2024) → Ouvidoria → NIP → jurídico.', html, done:!!S.glosa};
+    <select id="glosa"><option value="">Selecione…</option>${opts}</select>${corpo}
+    <details><summary class="meta">A sequência completa da contestação</summary>
+      <div class="box"><ol class="l">${KB.sequencia.map(s=>`<li>${pend(s)}</li>`).join('')}</ol></div>
+    </details>`;
+  return {titulo:'Se houver negativa', sub:KB.sequencia[0], html, done:!!S.glosa};
 }
 
 function chk(grupo,i,t,on){
@@ -742,6 +781,24 @@ function preencher(t){
   const c=dor();
   return t.replaceAll('{dx}', c.nome.toLowerCase()).replaceAll('{cid}', c.cid).replaceAll('{refs}', refsCurta());
 }
+/* Os 5 requisitos da ADI 7265, só quando o pedido é fora do Rol, e só os que
+   o médico marcou — o documento não afirma requisito que não foi conferido. */
+function blocoAdi(){
+  if(!foraDoRol()) return [];
+  const A = KB.adi7265;
+  const marcados = A.requisitos.filter((_,i)=>S.adi.has(i));
+  if(!marcados.length) return [];
+  // Os requisitos são citados por numeral romano no texto do STF: (i)…(v).
+  const ROMANOS = ['i','ii','iii','iv','v','vi','vii','viii','ix','x'];
+  return [`# ${A.nome.toUpperCase()}:`,
+          ...marcados.map(r=>`* (${ROMANOS[A.requisitos.indexOf(r)] || (A.requisitos.indexOf(r)+1)}) ${r}`), ''];
+}
+function blocoAnexos(){
+  const g = KB.glosas[S.glosa];
+  if(!g || !(g.anexos||[]).length) return [];
+  return ['# ANEXOS:', ...g.anexos.map(a=>`* ${a}`), ''];
+}
+
 function textoOuvidoria(){
   const c=dor(), p=pd(), P=pac(), g=KB.glosas[S.glosa];
   return [
@@ -752,28 +809,33 @@ function textoOuvidoria(){
     `Procedimento: ${KB.procedimentos[S.proc].nome} — ${codLinha()}`,
     `Diagnóstico: ${c.nome} (${c.ichd}; CID ${c.cid})`, '',
     preencher(g.ouvidoria), '',
+    ...blocoAdi(),
     `Indicação clínica: ${p.racional}`, '',
+    ...blocoAnexos(),
     `Requer-se a reanálise do pedido, com resposta por escrito e fundamentada, nos termos da RN ANS 623/2024.`, '',
     `${KB.meta.medico.nome} — Neurocirurgião — ${KB.meta.medico.crm} — ${KB.meta.medico.rqe}`
   ].join('\n');
 }
 function textoNIP(){
   const c=dor(), P=pac(), g=KB.glosas[S.glosa];
-  return `Sou beneficiário(a) da ${P.op}, carteirinha ${P.cart}. Em ${P.sol}, meu médico assistente, ${KB.meta.medico.nome} (${KB.meta.medico.crm}), solicitou autorização para ${KB.procedimentos[S.proc].nome.toLowerCase()} para tratamento de ${c.nome.toLowerCase()}. Em ${P.data} a operadora negou o pedido (protocolo ${P.prot}): ${g.nip}. Pedi reanálise à Ouvidoria e a negativa foi mantida. Solicito a intermediação da ANS para que o procedimento seja autorizado.\n\nTenho em mãos: pedido e relatório do médico, negativa por escrito da operadora e exames.`;
+  const emMaos = (g.anexos||[]).length
+    ? `\n\nTenho em mãos: ${g.anexos.map(a=>a.toLowerCase()).join('; ')}, além da negativa por escrito da operadora.`
+    : `\n\nTenho em mãos: pedido e relatório do médico, negativa por escrito da operadora e exames.`;
+  return `Sou beneficiário(a) da ${P.op}, carteirinha ${P.cart}. Em ${P.sol}, meu médico assistente, ${KB.meta.medico.nome} (${KB.meta.medico.crm}), solicitou autorização para ${KB.procedimentos[S.proc].nome.toLowerCase()} para tratamento de ${c.nome.toLowerCase()}. Em ${P.data} a operadora negou o pedido (protocolo ${P.prot}): ${g.nip}. Pedi reanálise à Ouvidoria e a negativa foi mantida. Solicito a intermediação da ANS para que o procedimento seja autorizado.${emMaos}`;
 }
 
 /* ---------- Eventos ---------- */
 function bind(){
   document.querySelectorAll('[data-dor]').forEach(b=>b.onclick=()=>{
-    if(S.dor!==b.dataset.dor){ S.dor=b.dataset.dor; S.crit.clear(); S.laudo.clear(); S.proc=null; S.dos.clear(); S.glosa=''; S.teste=novoTeste(); }
+    if(S.dor!==b.dataset.dor){ S.dor=b.dataset.dor; S.crit.clear(); S.laudo.clear(); S.proc=null; S.dos.clear(); S.glosa=''; S.adi.clear(); S.teste=novoTeste(); }
     render();
   });
   document.querySelectorAll('[data-proc]').forEach(b=>b.onclick=()=>{
-    if(S.proc!==b.dataset.proc){ S.proc=b.dataset.proc; S.dos.clear(); S.glosa=''; S.teste=novoTeste(); }
+    if(S.proc!==b.dataset.proc){ S.proc=b.dataset.proc; S.dos.clear(); S.glosa=''; S.adi.clear(); S.teste=novoTeste(); }
     render();
   });
   document.querySelectorAll('input[data-g]').forEach(i=>i.onchange=()=>{
-    const set = {crit:S.crit, alarme:S.alarme, dos:S.dos}[i.dataset.g];
+    const set = {crit:S.crit, alarme:S.alarme, dos:S.dos, adi:S.adi}[i.dataset.g];
     const n = +i.dataset.i; i.checked ? set.add(n) : set.delete(n); render();
   });
   document.querySelectorAll('input[data-laudo]').forEach(i=>i.onchange=()=>{
@@ -786,7 +848,8 @@ function bind(){
   document.querySelectorAll('input[name=end]').forEach(r=>r.onchange=()=>{
     S.endereco = r.value; salvar(); render();
   });
-  const PDFS = { guia: gerarGuiaPDF, relatorio: gerarRelatorioPDF, exames: gerarExamesPDF };
+  const PDFS = { guia: gerarGuiaPDF, relatorio: gerarRelatorioPDF, exames: gerarExamesPDF,
+                 ouvidoria: gerarOuvidoriaPDF, nip: gerarNipPDF };
   document.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>PDFS[b.dataset.pdf]());
 }
 function copiar(t){
@@ -1078,29 +1141,30 @@ function novoDoc(){
    Os geradores não reescrevem nada: consomem o mesmo texto de textoGuia() e
    textoRelatorio(), já verificado contra o protótipo. Assim o PDF e o texto
    copiável nunca divergem. */
+/* Converte o texto gerado em blocos de desenho. Linhas "# TÍTULO:" abrem uma
+   seção; a prosa entre elas (e a que vem ANTES da primeira seção, como o
+   diagnóstico e o argumento jurídico do pedido de reanálise) sai como
+   parágrafo. Nada do texto pode ser descartado no caminho para o PDF. */
 function blocosDoTexto(texto){
-  const linhas = texto.split('\n');
-  const inicio = linhas.findIndex(l => l.startsWith('# '));
   const blocos = [];
-  if(inicio === -1){
-    // Sem seções (relatório): parágrafos separados por linha em branco.
-    let buf = [];
-    linhas.forEach(l=>{
-      if(l.trim()) buf.push(l);
-      else if(buf.length){ blocos.push({tipo:'paragrafo', texto:buf.join(' ')}); buf = []; }
-    });
-    if(buf.length) blocos.push({tipo:'paragrafo', texto:buf.join(' ')});
-    return blocos;
-  }
-  let atual = null;
-  linhas.slice(inicio).forEach(l=>{
+  let atual = null, buf = [];
+  const fecharParagrafo = () => {
+    if(buf.length){ blocos.push({tipo:'paragrafo', texto:buf.join(' ')}); buf = []; }
+  };
+  texto.split('\n').forEach(l=>{
     if(l.startsWith('# ')){
+      fecharParagrafo();
       atual = {tipo:'secao', titulo:l, linhas:[]};
       blocos.push(atual);
-    } else if(atual && l.trim()){
+    } else if(!l.trim()){
+      if(!atual) fecharParagrafo();
+    } else if(atual){
       atual.linhas.push(l);
+    } else {
+      buf.push(l);
     }
   });
+  fecharParagrafo();
   return blocos;
 }
 
@@ -1190,6 +1254,61 @@ function gerarExamesPDF(){
   salvarPdf(doc, 'Exames', d.nome);
 }
 
+function gerarOuvidoriaPDF(){
+  const d = dadosPdf(); if(!exigirPaciente(d)) return;
+  if(!S.glosa){ toast('Escolha o motivo alegado pela operadora.'); return; }
+  const doc = novoDoc();
+  let y = desenharCabecalhoMedico(doc, 16);
+  y = desenharIdentificacao(doc, y, d);
+  y = tituloSublinhado(doc, y, 'PEDIDO DE REANÁLISE DE NEGATIVA DE COBERTURA');
+  // As 6 primeiras linhas (destinatário, referência e identificação) já estão
+  // no cabeçalho e no título; o corpo começa depois delas.
+  const linhas = textoOuvidoria().split('\n');
+  doc.setFont('helvetica','bold'); doc.setFontSize(10.5);
+  doc.text(seguroPdf(linhas[0]), 15, y); y += 12;
+  y = desenharBlocos(doc, y, blocosDoTexto(linhas.slice(6).join('\n')));
+  y = checarQuebraPagina(doc, y, 60);
+  desenharAssinaturaERodape(doc, y, S.endereco, 30);
+  salvarPdf(doc, 'Ouvidoria', d.nome);
+}
+
+/* Kit NIP: documento limpo, sem moldura, logo, rodapé ou assinatura. É
+   material de apoio ao paciente, escrito na voz dele — timbrar ou assinar
+   seria apresentar como declaração do médico. Decisão do Dr. Alfredo. */
+function novoDocSimples(){
+  const { jsPDF } = window.jspdf;
+  return new jsPDF({unit:'mm', format:'a4'});
+}
+
+function gerarNipPDF(){
+  const d = dadosPdf(); if(!exigirPaciente(d)) return;
+  if(!S.glosa){ toast('Escolha o motivo alegado pela operadora.'); return; }
+  const doc = novoDocSimples();
+  const w = doc.internal.pageSize.getWidth();
+
+  let y = tituloSublinhado(doc, 24, 'ORIENTAÇÕES PARA REGISTRO DE NIP NA ANS');
+  y = desenharParagrafo(doc, y, `Paciente: ${d.nome}`);
+  y = desenharSecao(doc, y, '# QUEM REGISTRA:', [KB.nip.quem]);
+  y = desenharSecao(doc, y, '# ONDE REGISTRAR:', KB.nip.onde, '*');
+  y = desenharSecao(doc, y, '# DEPOIS DE REGISTRAR:', [KB.nip.guardar, KB.nip.prazo], '*');
+  const g = KB.glosas[S.glosa];
+  if((g.anexos||[]).length) y = desenharSecao(doc, y, '# O QUE LEVAR:', g.anexos, '*');
+
+  // O texto em 1ª pessoa, num quadro, para o paciente copiar.
+  y = checarQuebraPagina(doc, y, 60);
+  doc.setFont('helvetica','bold'); doc.setFontSize(10.5); doc.setTextColor(0);
+  doc.text('# TEXTO PARA COPIAR AO REGISTRAR:', 15, y); y += 7;
+
+  const texto = quebrarTexto(doc, textoNIP(), 170);
+  const alturaQuadro = texto.length * 5 + 8;
+  doc.setDrawColor(150); doc.setLineWidth(0.3);
+  doc.rect(15, y - 5, w - 30, alturaQuadro);
+  doc.setFont('helvetica','normal');
+  texto.forEach(l => { escreverLinha(doc, l, 20, y, 'normal'); y += 5; });
+
+  salvarPdf(doc, 'NIP', d.nome);
+}
+
 /* ---------- Sessão (só neste aparelho — LGPD) ---------- */
 const CHAVE = 'in-neuro-cefaleia:sessao';
 function salvar(){
@@ -1198,10 +1317,28 @@ function salvar(){
     sessionStorage.setItem(CHAVE, JSON.stringify({
       pac:S.pac, clin:S.clin, tratPrevios:S.tratPrevios, endereco:S.endereco,
       dor:S.dor, proc:S.proc, glosa:S.glosa, teste:S.teste,
-      crit:[...S.crit], alarme:[...S.alarme], laudo:[...S.laudo], dos:[...S.dos]
+      crit:[...S.crit], alarme:[...S.alarme], laudo:[...S.laudo], dos:[...S.dos], adi:[...S.adi]
     }));
   } catch(e) { /* modo privado ou storage cheio: segue sem persistir */ }
 }
+/* Zera o caso. Sem isto, o telefone e o endereço de um paciente saem no
+   documento do seguinte — visto acontecer no teste do Sprint 3. */
+function novoPaciente(){
+  Object.keys(S.pac).forEach(k => S.pac[k] = '');
+  Object.keys(S.clin).forEach(k => S.clin[k] = '');
+  S.tratPrevios = [];
+  S.dor = null; S.proc = null; S.glosa = '';
+  S.crit.clear(); S.alarme.clear(); S.laudo.clear(); S.dos.clear(); S.adi.clear();
+  S.teste = novoTeste();
+  S.endereco = 'vinci';
+  ['carteirinha','historia'].forEach(limpar);
+  $('txt_historia').value = '';
+  try { sessionStorage.removeItem(CHAVE); } catch(e) { /* modo privado */ }
+  espelharCampos(); renderTrat(); render();
+  window.scrollTo(0,0);
+  toast('Caso encerrado. Nenhum dado do paciente anterior ficou.');
+}
+
 function carregar(){
   try {
     const r = JSON.parse(sessionStorage.getItem(CHAVE) || 'null');
@@ -1214,6 +1351,7 @@ function carregar(){
     S.teste = Object.assign(novoTeste(), r.teste||{});
     S.crit = new Set(r.crit||[]); S.alarme = new Set(r.alarme||[]);
     S.laudo = new Set(r.laudo||[]); S.dos = new Set(r.dos||[]);
+    S.adi = new Set(r.adi||[]);
   } catch(e) { /* sessão corrompida: começa limpa */ }
 }
 
@@ -1429,6 +1567,11 @@ function bindEtapa0(){
   $('btn_trat_add').onclick = ()=>{
     S.tratPrevios.push({medicamento:'', dose:'', periodo:'', desfecho:''});
     renderTrat(); salvar();
+  };
+
+  $('btn_novo').onclick = ()=>{
+    if(!confirm('Apagar todos os dados deste caso e começar um novo paciente?')) return;
+    novoPaciente();
   };
 
   // Ctrl+V em qualquer lugar da página cai na zona ativa.

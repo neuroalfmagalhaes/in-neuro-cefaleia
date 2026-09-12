@@ -1,7 +1,7 @@
 {
   "meta": {
-    "versao": "1.1",
-    "data": "2026-09-10",
+    "versao": "1.2",
+    "data": "2026-09-12",
     "medico": {
       "nome": "Dr. Alfredo Magalhães",
       "crm": "CREMESP 135506",
@@ -170,7 +170,8 @@
             "nice260",
             "conitec70"
           ],
-          "alvo": "Protocolo PREEMPT: 155 U em 31 pontos fixos, 7 grupos musculares de cabeça e pescoço (até 195 U em 39 pontos, follow-the-pain), a cada 12 semanas"
+          "alvo": "Protocolo PREEMPT: 155 U em 31 pontos fixos, 7 grupos musculares de cabeça e pescoço (até 195 U em 39 pontos, follow-the-pain), a cada 12 semanas",
+          "fora_rol": true
         },
         "rf": {
           "risco": "nao",
@@ -417,7 +418,8 @@
             "prf_rs2024",
             "sanders",
             "narouze"
-          ]
+          ],
+          "fora_rol": true
         }
       }
     },
@@ -481,7 +483,8 @@
           "refs": [
             "ean_nt"
           ],
-          "alvo": "Pontos no território do(s) ramo(s) acometido(s) — dose [PREENCHER]"
+          "alvo": "Pontos no território do(s) ramo(s) acometido(s) — dose [PREENCHER]",
+          "fora_rol": true
         },
         "rf": {
           "risco": "baixo",
@@ -557,47 +560,82 @@
       "nome": "Fora do Rol / fora da DUT",
       "ouvidoria": "A negativa fundamenta-se na ausência de previsão no Rol/DUT. Nos termos do art. 10, §13, da Lei 9.656/1998 (redação da Lei 14.454/2022) e dos critérios fixados pelo STF na ADI 7265, a cobertura é devida quando cumpridos cumulativamente: (i) prescrição do médico assistente — anexa; (ii) inexistência de negativa expressa da ANS ou de análise pendente; (iii) ausência de alternativa terapêutica adequada no Rol para este paciente, que já apresentou falha às opções disponíveis (tabela anexa); (iv) eficácia e segurança demonstradas por evidência de alto nível — {refs}; (v) registro na Anvisa.",
       "interno": "Para o Botox na enxaqueca, a ANS recomendou em 2020 não incluir a migrânea crônica na DUT — é o ponto fraco do requisito (ii). Argumente com evidência posterior e com a avaliação atual da Conitec, sem omitir o fato.",
-      "nip": "a operadora alegou que o procedimento não está no Rol da ANS, mas meu caso cumpre os requisitos da lei e do STF para cobertura fora do Rol, e já tentei sem sucesso os tratamentos disponíveis"
+      "nip": "a operadora alegou que o procedimento não está no Rol da ANS, mas meu caso cumpre os requisitos da lei e do STF para cobertura fora do Rol, e já tentei sem sucesso os tratamentos disponíveis",
+      "anexos": [
+        "Relatório de justificativa técnica",
+        "Diário de cefaleia",
+        "Tabela de tratamentos prévios (dose, período, desfecho)",
+        "Escalas MIDAS e HIT-6"
+      ]
     },
     "dut62": {
       "nome": "Não preenche a DUT 62",
       "ouvidoria": "O paciente preenche integralmente o item 3 da DUT 62: diagnóstico de {dx}, refratário ou intolerante a tratamento clínico contínuo por pelo menos 3 meses (tabela de tratamentos anexa). Solicita-se a indicação objetiva de qual requisito da DUT não estaria atendido, conforme o dever de fundamentação da RN 623/2024.",
-      "nip": "a operadora alegou que não cumpro a diretriz de utilização, mas cumpro todos os requisitos: tenho o diagnóstico e fiz mais de 3 meses de tratamento com remédios, sem melhora"
+      "nip": "a operadora alegou que não cumpro a diretriz de utilização, mas cumpro todos os requisitos: tenho o diagnóstico e fiz mais de 3 meses de tratamento com remédios, sem melhora",
+      "anexos": [
+        "Tabela de tratamentos prévios (dose, período, desfecho)",
+        "Registro do bloqueio diagnóstico",
+        "Exames de imagem com laudo"
+      ]
     },
     "falha": {
       "nome": "Falha terapêutica não comprovada",
       "ouvidoria": "Segue tabela de tratamentos prévios com medicamento, dose, período de uso e desfecho (falha, intolerância ou contraindicação), extraída do prontuário, demonstrando o esgotamento das alternativas antes da indicação atual.",
-      "nip": "a operadora disse que não comprovei os tratamentos anteriores, mas meu médico enviou a lista completa com doses e períodos"
+      "nip": "a operadora disse que não comprovei os tratamentos anteriores, mas meu médico enviou a lista completa com doses e períodos",
+      "anexos": [
+        "Receitas e/ou cópia do prontuário",
+        "Tabela de tratamentos prévios (dose, período, desfecho)"
+      ]
     },
     "estetico": {
       "nome": "Procedimento estético",
       "ouvidoria": "Trata-se de procedimento terapêutico para doença neurológica ({dx}, CID {cid}), em protocolo com pontos e doses definidos por ensaios clínicos, sem qualquer finalidade estética.",
-      "nip": "a operadora tratou como procedimento estético, mas é tratamento de uma doença neurológica"
+      "nip": "a operadora tratou como procedimento estético, mas é tratamento de uma doença neurológica",
+      "anexos": [
+        "Relatório de justificativa técnica"
+      ]
     },
     "quantidade": {
       "nome": "Quantidade de unidades, frascos ou nervos",
       "ouvidoria": "A quantidade solicitada decorre do protocolo validado e da anatomia acometida (número de nervos, lados ou segmentos). Para toxina botulínica, o protocolo PREEMPT utiliza 155–195 U, o que exige 2 frascos de 100 U; unidades de toxinas diferentes não são intercambiáveis.",
-      "nip": "a operadora liberou quantidade menor do que a necessária para o protocolo indicado pelo meu médico"
+      "nip": "a operadora liberou quantidade menor do que a necessária para o protocolo indicado pelo meu médico",
+      "anexos": [
+        "Referências do protocolo PREEMPT",
+        "Guia com as quantidades discriminadas"
+      ]
     },
     "divergencia": {
       "nome": "Divergência do auditor",
       "ouvidoria": "Havendo divergência técnico-assistencial entre o médico auditor e o médico assistente, requer-se a instauração de junta médica nos termos da RN ANS 424/2017, com a indicação do profissional desempatador.",
-      "nip": "o médico da operadora discordou do meu médico sem realizar a junta médica prevista nas regras da ANS"
+      "nip": "o médico da operadora discordou do meu médico sem realizar a junta médica prevista nas regras da ANS",
+      "anexos": [
+        "Relatório de justificativa técnica",
+        "Literatura citada no relatório"
+      ]
     },
     "material": {
       "nome": "Radioscopia, material ou sedação negados",
       "ouvidoria": "Os itens negados (radioscopia, cânula/eletrodo e/ou sedação) são indispensáveis à execução segura do procedimento autorizado. Autorizar o ato e negar os meios necessários equivale, na prática, à negativa do próprio procedimento.",
-      "nip": "a operadora autorizou o procedimento mas negou os materiais e equipamentos sem os quais ele não pode ser feito"
+      "nip": "a operadora autorizou o procedimento mas negou os materiais e equipamentos sem os quais ele não pode ser feito",
+      "anexos": [
+        "Guia com os itens discriminados (radioscopia, materiais, sedação)"
+      ]
     },
     "exame": {
       "nome": "Exame de imagem negado",
       "ouvidoria": "O exame foi indicado para exclusão de causa secundária antes de procedimento intervencionista e/ou diante de sinal de alarme, conforme justificativa clínica anexa e diretrizes citadas ({refs}).",
-      "nip": "a operadora negou o exame que meu médico pediu para excluir outras causas antes do procedimento"
+      "nip": "a operadora negou o exame que meu médico pediu para excluir outras causas antes do procedimento",
+      "anexos": [
+        "Solicitação do exame com CID e justificativa clínica"
+      ]
     },
     "prazo": {
       "nome": "Sem resposta no prazo",
       "ouvidoria": "Transcorrido o prazo máximo de atendimento previsto na RN ANS 566/2022 sem resposta conclusiva, requer-se a autorização imediata e a comunicação por escrito, nos termos da RN 623/2024.",
-      "nip": "a operadora não respondeu ao pedido dentro do prazo da ANS"
+      "nip": "a operadora não respondeu ao pedido dentro do prazo da ANS",
+      "anexos": [
+        "Protocolo da solicitação e datas"
+      ]
     }
   },
   "bloqueio_teste": {
@@ -643,5 +681,32 @@
       "Data do retorno da dor",
       "Medicação durante a observação"
     ]
-  }
+  },
+  "adi7265": {
+    "nome": "Cobertura fora do Rol — requisitos do STF",
+    "fundamento": "Lei 9.656/1998, art. 10, §13 (redação da Lei 14.454/2022), e STF, ADI 7265 (18/09/2025): cinco requisitos cumulativos.",
+    "requisitos": [
+      "Prescrição do médico assistente",
+      "Inexistência de negativa expressa da ANS ou de análise pendente",
+      "Ausência de alternativa terapêutica adequada no Rol para este paciente",
+      "Eficácia e segurança demonstradas por evidência de alto nível",
+      "Registro na Anvisa"
+    ]
+  },
+  "nip": {
+    "quem": "O registro é feito pelo próprio paciente, não pelo médico.",
+    "onde": [
+      "Portal da ANS (www.gov.br/ans) — canal de reclamação do beneficiário",
+      "Disque ANS: 0800 701 9656"
+    ],
+    "prazo": "NIP assistencial: a operadora tem até 5 dias úteis para responder (RN ANS 483/2022).",
+    "guardar": "Guardar o número de protocolo da NIP."
+  },
+  "sequencia": [
+    "Exigir a negativa por escrito, com fundamento (RN ANS 623/2024).",
+    "Pedir reanálise à Ouvidoria da operadora, com relatório técnico e anexos.",
+    "Havendo divergência técnica do auditor, requerer junta médica (RN ANS 424/2017).",
+    "Mantida a negativa, o paciente registra a NIP na ANS.",
+    "NIP sem solução: encaminhar ao jurídico, com o dossiê montado nos 5 requisitos da ADI 7265."
+  ]
 }
