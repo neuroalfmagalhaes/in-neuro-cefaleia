@@ -397,8 +397,19 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 
 /* Itens [confirmar] / [PREENCHER] nunca são removidos nem substituídos:
    aparecem destacados em toda a interface. */
-const PEND = /\[(?:confirmar|PREENCHER)[^\]]*\]/g;
+/* Três coisas que nunca podem passar em silêncio: o que o médico precisa
+   validar na base ([confirmar], [PREENCHER]) e as lacunas dos modelos de
+   história clínica ([__ ...]). Todas ficam destacadas na tela e em negrito no
+   PDF, pelo mesmo caminho. */
+const PEND = /\[(?:confirmar|PREENCHER|__)[^\]]*\]/g;
 const pend = s => esc(s).replace(PEND, m => `<mark class="pend">${m}</mark>`);
+
+/* Quantas lacunas de modelo ainda estão em aberto na história clínica. */
+const RE_LACUNA = /\[__[^\]]*\]/g;
+function contarLacunas(){
+  return ((S.clin.hda||'').match(RE_LACUNA)||[]).length +
+         ((S.clin.exame||'').match(RE_LACUNA)||[]).length;
+}
 
 const pac = () => ({
   nome: S.pac.nome.trim() || '[nome do paciente]',
@@ -505,8 +516,40 @@ function stepCrit(){
     <div class="box"><h3>Sinais de alarme (SNNOOP10)</h3>
       ${KB.alarme.map((t,i)=>chk('alarme',i,t,S.alarme.has(i))).join('')}
     </div>
-    ${S.alarme.size?`<div class="flag">Há sinal de alarme: a RM de crânio entra como exame obrigatório e o procedimento só depois de excluída causa secundária.</div>`:''}`;
+    ${S.alarme.size?`<div class="flag">Há sinal de alarme: a RM de crânio entra como exame obrigatório e o procedimento só depois de excluída causa secundária.</div>`:''}
+    ${blocoModelo(c)}`;
   return {titulo:'Critérios e sinais de alarme', sub:'Marque o que está documentado no prontuário.', html, done:S.crit.size===c.criterios.length};
+}
+
+/* Roteiro de história clínica da cefaleia escolhida, ao lado do que a IA leu
+   do prontuário — é o "confrontar com a foto" que o Dr. Alfredo pediu.
+   O modelo é andaime: cada dado é lacuna, nada vem afirmado. */
+function blocoModelo(c){
+  const m = c.modelo; if(!m) return '';
+  const lacunas = contarLacunas();
+  const extraido = (S.clin.hda||'').trim();
+
+  return `<div class="box"><h3>Roteiro da história clínica</h3>
+    <p class="meta">Na ordem dos critérios ${pend(c.ichd)} que a auditoria confere. Cada
+      <mark class="pend">[__ …]</mark> é uma lacuna sua: confronte com o prontuário e complete.
+      Nada aqui vem afirmado.</p>
+
+    ${extraido ? `<details><summary class="meta">O que a IA leu do prontuário (${extraido.length} caracteres)</summary>
+      <pre class="out" style="margin-top:8px">${pend(extraido)}</pre></details>` : ''}
+
+    <details><summary class="meta">Ver o roteiro da HDA</summary>
+      <pre class="out" style="margin-top:8px">${pend(m.hda)}</pre></details>
+    <details><summary class="meta">Ver o roteiro do exame neurológico</summary>
+      <pre class="out" style="margin-top:8px">${pend(m.exame)}</pre></details>
+
+    <div class="actions">
+      <button class="btn" data-modelo="hda">${extraido?'Acrescentar roteiro da HDA':'Inserir roteiro da HDA'}</button>
+      <button class="btn ghost" data-modelo="exame">Inserir roteiro do exame</button>
+    </div>
+    ${extraido ? '<p class="meta">O texto extraído do prontuário é preservado: o roteiro entra abaixo dele.</p>' : ''}
+    ${lacunas ? `<div class="note">${lacunas} lacuna(s) ainda em aberto na história clínica.
+      Complete antes de gerar os documentos.</div>` : ''}
+  </div>`;
 }
 
 function stepExames(){
@@ -1024,6 +1067,16 @@ function bind(){
   if(so) so.onchange = ()=>{ S.operadora = so.value; salvar(); render(); };
   const bo = $('btn_ops');
   if(bo) bo.onclick = ()=> abrirOperadoras(true);
+  document.querySelectorAll('[data-modelo]').forEach(b=>b.onclick=()=>{
+    const campo = b.dataset.modelo;                       // 'hda' ou 'exame'
+    const modelo = dor()?.modelo?.[campo]; if(!modelo) return;
+    const atual = (S.clin[campo] || '').trim();
+    // O texto do prontuário é o dado primário: o roteiro entra ABAIXO, nunca
+    // no lugar dele.
+    S.clin[campo] = atual ? `${atual}\n\n— roteiro a completar —\n\n${modelo}` : modelo;
+    espelharCampos(); salvar(); render();
+    toast(atual ? 'Roteiro acrescentado abaixo do texto do prontuário.' : 'Roteiro inserido.');
+  });
   const PDFS = { guia: gerarGuiaPDF, relatorio: gerarRelatorioPDF, exames: gerarExamesPDF,
                  ouvidoria: gerarOuvidoriaPDF, nip: gerarNipPDF };
   document.querySelectorAll('[data-pdf]').forEach(b=>b.onclick=()=>PDFS[b.dataset.pdf]());
@@ -1241,11 +1294,36 @@ function desenharCabecalhoMedico(doc, y){
 /* Divide a linha em trechos normais e em negrito: o rótulo antes dos dois
    pontos e, sobretudo, os itens [confirmar] / [PREENCHER], que nunca podem
    passar despercebidos no documento. */
+/* Uma pendência longa é quebrada em duas linhas pelo splitTextToSize, e aí
+   nenhuma das metades casa com o regex (falta o "[" ou o "]"). Sem tratar
+   isso, metade da lacuna perde o destaque. _pendAberta carrega o estado de
+   uma linha para a seguinte. */
+let _pendAberta = false;
+const PEND_ABRE = /\[(?:confirmar|PREENCHER|__)/g;
+
 function segmentos(linha, comRotulo){
   const marcas = [];
   let m;
+
+  if(_pendAberta){
+    // Vem de cima: destaca até fechar, ou a linha toda se não fechar aqui.
+    const fim = linha.indexOf(']');
+    marcas.push([0, fim === -1 ? linha.length : fim + 1]);
+    _pendAberta = fim === -1;
+  }
   const re = new RegExp(PEND.source, 'g');
-  while((m = re.exec(linha)) !== null) marcas.push([m.index, m.index + m[0].length]);
+  while((m = re.exec(linha)) !== null){
+    if(m.index >= (marcas[0] ? marcas[0][1] : 0)) marcas.push([m.index, m.index + m[0].length]);
+  }
+  // Abriu nesta linha e não fechou: avisa a próxima.
+  const abre = new RegExp(PEND_ABRE.source, 'g');
+  let ultima = null;
+  while((m = abre.exec(linha)) !== null) ultima = m.index;
+  if(ultima !== null && linha.indexOf(']', ultima) === -1){
+    marcas.push([ultima, linha.length]);
+    _pendAberta = true;
+  }
+
   if(comRotulo){
     const r = linha.match(/^[^:]{1,40}:/);
     if(r) marcas.unshift([0, r[0].length]);
@@ -1300,8 +1378,8 @@ function desenharIdentificacao(doc, y, d){
   if(d.acomodacao) dir.push(`Acomodação: ${d.acomodacao}`);
   if(d.ans) dir.push(`Registro ANS: ${d.ans}`);
 
-  let yy = y;  esq.forEach(l => { escreverLinha(doc, l, 15, yy, 'ident'); yy += 5; });
-  let yy2 = y; dir.forEach(l => { escreverLinha(doc, l, 195, yy2, 'ident', 'right'); yy2 += 5; });
+  let yy = y;  esq.forEach(l => { _pendAberta = false; escreverLinha(doc, l, 15, yy, 'ident'); yy += 5; });
+  let yy2 = y; dir.forEach(l => { _pendAberta = false; escreverLinha(doc, l, 195, yy2, 'ident', 'right'); yy2 += 5; });
   return Math.max(yy, yy2) + 6;
 }
 
@@ -1351,6 +1429,7 @@ function desenharSecao(doc, y, titulo, linhas, bullet){
   // corrente, e medir em negrito quebraria as linhas mais cedo do que o devido.
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5);
   uteis.forEach(linha => {
+    _pendAberta = false;
     quebrarTexto(doc, (bullet ? bullet + " " : "") + linha, 180).forEach(w => {
       y = checarQuebraPagina(doc, y, 60);
       escreverLinha(doc, w, 15, y, 'normal'); y += 5;
@@ -1362,6 +1441,7 @@ function desenharSecao(doc, y, titulo, linhas, bullet){
 function desenharParagrafo(doc, y, texto){
   if(!texto) return y;
   doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(0);
+  _pendAberta = false;
   quebrarTexto(doc, texto, 180).forEach(w => {
     y = checarQuebraPagina(doc, y, 60);
     escreverLinha(doc, w, 15, y, 'normal'); y += 5.5;
@@ -1464,6 +1544,11 @@ function exigirPaciente(d){
     .filter(([c]) => !d[c]).map(([,r]) => r);
   if(faltam.length){ toast('Preencha na etapa 0: ' + faltam.join(', ')); return false; }
   if(!window.jspdf){ toast('Biblioteca de PDF não carregou. Verifique a conexão.'); return false; }
+  // Lacuna de roteiro impressa num documento enviado à operadora destrói a
+  // credibilidade do pedido. Não bloqueia — mas não passa por descuido.
+  const n = contarLacunas();
+  if(n && !confirm(`Ainda há ${n} lacuna(s) não preenchida(s) na história clínica, e elas vão sair impressas no documento. Gerar assim mesmo?`))
+    return false;
   return true;
 }
 
@@ -1578,6 +1663,7 @@ function gerarNipPDF(){
   doc.setDrawColor(150); doc.setLineWidth(0.3);
   doc.rect(15, y - 5, w - 30, alturaQuadro);
   doc.setFont('helvetica','normal');
+  _pendAberta = false;
   texto.forEach(l => { escreverLinha(doc, l, 20, y, 'normal'); y += 5; });
 
   salvarPdf(doc, 'NIP', d.nome);

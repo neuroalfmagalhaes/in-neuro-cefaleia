@@ -1,6 +1,6 @@
 {
   "meta": {
-    "versao": "1.4",
+    "versao": "1.5",
     "data": "2026-09-12",
     "medico": {
       "nome": "Dr. Alfredo Magalhães",
@@ -214,6 +214,10 @@
           "risco": "nao",
           "nota": "Sem indicação de radiofrequência na enxaqueca."
         }
+      },
+      "modelo": {
+        "hda": "Paciente [__ idade] anos, [__ profissão], com cefaleia há [__ tempo de evolução].\n\nRefere [__ nº] dias de cefaleia por mês nos últimos [__ nº] meses, dos quais [__ nº] com características migranosas. A dor é [__ manter: pulsátil / em pressão], [__ manter: unilateral / bilateral], de intensidade [__ manter: leve / moderada / forte], [__ manter: com piora aos esforços / sem piora aos esforços], acompanhada de [__ manter os presentes: náusea / vômitos / fotofobia / fonofobia].\n\nFaz uso de [__ sintomático] em média [__ nº] vezes por semana, com [__ manter: melhora parcial e de curta duração / sem melhora].\n\nTraz diário de cefaleia preenchido por [__ período].\n\nNega [__ conferir e manter os que se aplicam: febre, perda de peso, história de neoplasia, déficit neurológico, início súbito, mudança de padrão, piora postural, papiledema, trauma craniano recente, imunossupressão].",
+        "exame": "Consciente, orientado(a), [__ manter: sem sinais meníngeos / com rigidez de nuca]. Fundoscopia [__ manter: sem papiledema / com papiledema]. Pupilas [__ manter: isocóricas e fotorreagentes / alteradas: descrever]. Pares cranianos [__ manter: sem alterações / alterados: descrever]. Força [__ manter: grau V global / déficit: descrever], reflexos [__ manter: simétricos / assimétricos: descrever], coordenação e marcha [__ manter: preservadas / alteradas: descrever]. [__ manter se presente: dor à palpação da musculatura pericraniana e cervical posterior]."
       }
     },
     "tensional": {
@@ -270,6 +274,10 @@
           "risco": "nao",
           "nota": "Sem indicação de radiofrequência na cefaleia tensional."
         }
+      },
+      "modelo": {
+        "hda": "Paciente [__ idade] anos, [__ profissão], com cefaleia há [__ tempo de evolução].\n\nRefere [__ nº] dias de cefaleia por mês nos últimos [__ nº] meses. A dor é [__ manter: em pressão / em aperto], [__ manter: bilateral / holocraniana], de intensidade [__ manter: leve / moderada], sem piora com esforço físico.\n\nNega náusea e vômitos, e refere [__ manter apenas um, ou nenhum: fotofobia / fonofobia / nenhum dos dois]. Não apresenta características migranosas.\n\nFaz uso de [__ sintomático] em média [__ nº] vezes por semana, com [__ manter: melhora parcial / sem melhora].\n\nNega [__ conferir e manter os que se aplicam: febre, perda de peso, história de neoplasia, déficit neurológico, início súbito, mudança de padrão, piora postural, papiledema, trauma craniano recente, imunossupressão].",
+        "exame": "Consciente, orientado(a), [__ manter: sem sinais meníngeos / com rigidez de nuca]. Fundoscopia [__ manter: sem papiledema / com papiledema]. Pupilas [__ manter: isocóricas e fotorreagentes / alteradas: descrever]. Pares cranianos [__ manter: sem alterações / alterados: descrever]. Força [__ manter: grau V global / déficit: descrever], reflexos [__ manter: simétricos / assimétricos: descrever], coordenação e marcha [__ manter: preservadas / alteradas: descrever]. Dor à palpação da musculatura pericraniana e cervical [__ manter: presente / ausente], [__ manter: simétrica / mais intensa à direita / mais intensa à esquerda]."
       }
     },
     "arnold": {
@@ -402,6 +410,10 @@
             }
           ]
         }
+      },
+      "modelo": {
+        "hda": "Paciente [__ idade] anos, [__ profissão], com dor há [__ tempo de evolução].\n\nRefere dor paroxística, em [__ manter: choque / pontada], no território do [__ manter os acometidos: nervo occipital maior / occipital menor / terceiro occipital], à [__ manter: direita / esquerda / bilateral], com irradiação para [__ região de irradiação]. Os paroxismos duram [__ duração] e ocorrem [__ nº] vezes por [__ manter: dia / semana], com intensidade [__ nº de 0 a 10].\n\nDescreve [__ manter os presentes: disestesia / alodinia] no couro cabeludo [__ manter os gatilhos: ao pentear os cabelos / ao apoiar a cabeça no travesseiro / à rotação cervical].\n\nFaz uso de [__ medicação em uso] com [__ manter: melhora parcial / sem melhora].\n\n[__ preencher se já houve bloqueio anestésico prévio: em (data) foi realizado bloqueio do nervo (alvo), com alívio de (%) por (duração) — o alívio temporário integra o critério diagnóstico da ICHD-3 13.4]\n\nNega [__ conferir e manter os que se aplicam: febre, perda de peso, história de neoplasia, déficit neurológico, início súbito, mudança de padrão, piora postural, papiledema, trauma craniano recente, imunossupressão].",
+        "exame": "Consciente, orientado(a), [__ manter: sem sinais meníngeos / com rigidez de nuca]. Fundoscopia [__ manter: sem papiledema / com papiledema]. Pupilas [__ manter: isocóricas e fotorreagentes / alteradas: descrever]. Pares cranianos [__ manter: sem alterações / alterados: descrever]. Força [__ manter: grau V global / déficit: descrever], reflexos [__ manter: simétricos / assimétricos: descrever], coordenação e marcha [__ manter: preservadas / alteradas: descrever]. Dor à palpação sobre o trajeto do [__ manter: nervo occipital maior / occipital menor], à [__ manter: direita / esquerda / bilateral]. Sinal de Tinel [__ manter: positivo / negativo]. Sensibilidade no território occipital [__ manter: preservada / hipoestesia / disestesia]."
       }
     },
     "salvas": {
@@ -522,6 +534,10 @@
             }
           ]
         }
+      },
+      "modelo": {
+        "hda": "Paciente [__ idade] anos, [__ profissão], com crises há [__ tempo de evolução].\n\nRefere crises de dor estritamente unilateral, à [__ manter: direita / esquerda], de localização [__ manter as acometidas: orbitária / supraorbitária / temporal], de intensidade [__ nº de 0 a 10], com duração de [__ nº] minutos por crise.\n\nDurante as crises apresenta, do mesmo lado da dor, [__ manter os presentes: lacrimejamento / hiperemia conjuntival / rinorreia / obstrução nasal / edema palpebral / sudorese facial / miose / ptose] e [__ manter: inquietação ou agitação psicomotora / sem inquietação].\n\nA frequência é de [__ nº] crises por [__ manter: dia / semana], em período de salvas iniciado em [__ data ou mês]. [__ manter se crônica: o quadro não apresenta remissão maior que 3 meses há pelo menos 1 ano, caracterizando a forma crônica (ICHD-3 3.1.2)].\n\nFaz uso de [__ medicação em uso] com [__ manter: melhora parcial / sem melhora].\n\nNega [__ conferir e manter os que se aplicam: febre, perda de peso, história de neoplasia, déficit neurológico, início súbito, mudança de padrão, piora postural, papiledema, trauma craniano recente, imunossupressão].",
+        "exame": "Consciente, orientado(a), [__ manter: sem sinais meníngeos / com rigidez de nuca]. Fundoscopia [__ manter: sem papiledema / com papiledema]. Pupilas [__ manter: isocóricas e fotorreagentes / alteradas: descrever]. Pares cranianos [__ manter: sem alterações / alterados: descrever]. Força [__ manter: grau V global / déficit: descrever], reflexos [__ manter: simétricos / assimétricos: descrever], coordenação e marcha [__ manter: preservadas / alteradas: descrever]. Durante a crise: [__ manter os presentes: miose / ptose / lacrimejamento / hiperemia conjuntival / rinorreia], à [__ manter: direita / esquerda]. Fora da crise, [__ manter: sem alterações / achados: descrever]."
       }
     },
     "trigemeo": {
@@ -671,6 +687,10 @@
             }
           ]
         }
+      },
+      "modelo": {
+        "hda": "Paciente [__ idade] anos, [__ profissão], com dor facial há [__ tempo de evolução].\n\nRefere paroxismos de dor de duração de [__ manter: segundos / até 2 minutos], em [__ manter: choque / pontada / facada], de intensidade [__ nº de 0 a 10], no território do [__ manter os ramos acometidos: V1 (oftálmico) / V2 (maxilar) / V3 (mandibular)], à [__ manter: direita / esquerda].\n\nAs crises são desencadeadas por estímulos inócuos: [__ manter os gatilhos: ao falar / ao mastigar / ao escovar os dentes / ao barbear-se / ao tocar a face / pelo vento no rosto]. [__ manter: nega dor contínua entre os paroxismos / refere dor contínua de fundo entre os paroxismos].\n\nA frequência é de [__ nº] crises por [__ manter: dia / semana].\n\nFaz uso de [__ medicação em uso, dose] com [__ manter: melhora parcial / sem melhora / intolerância: descrever].\n\n[__ preencher após a ressonância: classificação — clássica (compressão neurovascular com alteração morfológica da raiz), idiopática ou secundária (descrever a causa)]\n\nNega [__ conferir e manter os que se aplicam: febre, perda de peso, história de neoplasia, déficit neurológico, início súbito, mudança de padrão, piora postural, papiledema, trauma craniano recente, imunossupressão].",
+        "exame": "Consciente, orientado(a), [__ manter: sem sinais meníngeos / com rigidez de nuca]. Fundoscopia [__ manter: sem papiledema / com papiledema]. Pupilas [__ manter: isocóricas e fotorreagentes / alteradas: descrever]. Pares cranianos [__ manter: sem alterações / alterados: descrever]. Força [__ manter: grau V global / déficit: descrever], reflexos [__ manter: simétricos / assimétricos: descrever], coordenação e marcha [__ manter: preservadas / alteradas: descrever]. Sensibilidade facial [__ manter: preservada nos três ramos / hipoestesia em: descrever o ramo]. Reflexo corneopalpebral [__ manter: presente / diminuído / ausente]. Musculatura masseteriana [__ manter: eutrófica e simétrica / alterada: descrever]. Zona de gatilho [__ manter: identificada em (descrever) / não identificada]."
       }
     }
   },
